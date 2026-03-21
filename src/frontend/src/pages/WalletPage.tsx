@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { useAppContext } from "../context/AppContext";
@@ -15,6 +16,7 @@ type Plan = (typeof PLANS)[number];
 export function WalletPage() {
   const { userProfile } = useAppContext();
   const balance = userProfile?.balance?.toFixed(2) ?? "0.00";
+  const navigate = useNavigate();
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[1]); // ₹250 auto-selected
   const [showUTR, setShowUTR] = useState(false);
@@ -54,6 +56,27 @@ export function WalletPage() {
 
   return (
     <main className="max-w-[430px] mx-auto px-3 py-4 pb-24">
+      {/* Back Button */}
+      <motion.button
+        type="button"
+        onClick={() => navigate({ to: "/" })}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        whileTap={{ scale: 0.95 }}
+        data-ocid="wallet.link"
+        className="flex items-center gap-2 text-sm font-semibold mb-4 px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(59,130,246,0.25)",
+          color: "#93c5fd",
+          backdropFilter: "blur(8px)",
+          boxShadow: "0 0 12px rgba(59,130,246,0.15)",
+        }}
+      >
+        <span style={{ fontSize: "16px" }}>←</span>
+        <span>Back to Home</span>
+      </motion.button>
+
       {/* Header */}
       <motion.h1
         initial={{ opacity: 0, y: -10 }}

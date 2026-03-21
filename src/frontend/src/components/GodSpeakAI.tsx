@@ -9,6 +9,27 @@ const aiState = {
   exitSpoken: false,
 };
 
+// ── smartSpeak: rate-limited voice with per-call custom delay ──
+let lastSpokenTime = 0;
+
+export function smartSpeak(text: string, customDelay = 30000) {
+  if (!("speechSynthesis" in window)) return;
+  const currentTime = Date.now();
+  if (currentTime - lastSpokenTime < customDelay) return;
+
+  const clean = text.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
+  const speech = new SpeechSynthesisUtterance(clean);
+  speech.lang = "hi-IN";
+  speech.rate = 1;
+  speech.pitch = 1;
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(speech);
+
+  lastSpokenTime = currentTime;
+}
+
+// ── godSpeak: always fires, no rate-limiting (for one-time events) ──
 export function godSpeak(text: string) {
   if (!("speechSynthesis" in window)) return;
   const clean = text.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
@@ -26,7 +47,7 @@ export function GodSpeakAI() {
   const clickCount = useRef(0);
 
   useEffect(() => {
-    // ── Visit tracker ──
+    // ── Visit tracker (one-time → godSpeak) ──
     const raw = localStorage.getItem("idboost_visits");
     const visits = (Number(raw) || 0) + 1;
     localStorage.setItem("idboost_visits", String(visits));
@@ -41,7 +62,7 @@ export function GodSpeakAI() {
       }
     }, 2000);
 
-    // ── Click tracker (3rd click) ──
+    // ── Click tracker (3rd click → godSpeak, one-time event) ──
     const handleClick = () => {
       clickCount.current += 1;
       if (clickCount.current === 3) {
@@ -52,13 +73,11 @@ export function GodSpeakAI() {
     };
     document.addEventListener("click", handleClick);
 
-    // ── Idle detection (every 1s) ──
+    // ── Idle detection (every 1s) → smartSpeak with 60s delay ──
     idleRef.current = setInterval(() => {
       idleTime.current += 1;
       if (idleTime.current === 10 && !aiState.idleSpoken) {
-        godSpeak(
-          "Sir, aap services explore kar sakte hain ya recharge karke shuru karein.",
-        );
+        smartSpeak("Explore services", 60000);
         aiState.idleSpoken = true;
       }
     }, 1000);
@@ -71,19 +90,19 @@ export function GodSpeakAI() {
     document.addEventListener("keypress", resetIdle);
     document.addEventListener("touchstart", resetIdle);
 
-    // ── Scroll trigger (> 200px, once per session) ──
+    // ── Scroll trigger (> 200px, once per session) → smartSpeak with 90s delay ──
     const handleScroll = () => {
       if (window.scrollY > 200 && !aiState.scrollSpoken) {
-        godSpeak("Sir, neeche special offers available hain, zaroor dekhein.");
+        smartSpeak("Special offer live hai", 90000);
         aiState.scrollSpoken = true;
       }
     };
     window.addEventListener("scroll", handleScroll);
 
-    // ── Exit intent (cursor leaves top of page) ──
+    // ── Exit intent (cursor leaves top of page) → smartSpeak with 30s delay ──
     const handleMouseOut = (e: MouseEvent) => {
       if (e.clientY < 0 && !aiState.exitSpoken) {
-        godSpeak("Sir, jaane se pehle offer zaroor dekh lein.");
+        smartSpeak("Sir jaane se pehle offer dekh lein", 30000);
         aiState.exitSpoken = true;
         setTimeout(() => {
           aiState.exitSpoken = false;
@@ -116,12 +135,10 @@ export function GodSpeakAI() {
   return null;
 }
 
-/** Call this when user tries to order with zero balance */
+/** Call this when user tries to order with zero balance → smartSpeak with 30s delay */
 export function godWarnInsufficientBalance() {
   if (!aiState.warned) {
-    godSpeak(
-      "Sir, aapke account mein balance nahin hai. Kripya pehle fund add karein.",
-    );
+    smartSpeak("Balance low hai, recharge karein", 30000);
     aiState.warned = true;
   }
 }

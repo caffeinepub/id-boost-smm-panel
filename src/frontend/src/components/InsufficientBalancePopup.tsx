@@ -1,49 +1,70 @@
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalBalance } from "../hooks/useLocalBalance";
 import { godWarnInsufficientBalance } from "./GodSpeakAI";
+
+export function triggerInsufficientBalancePopup() {
+  window.dispatchEvent(new CustomEvent("show-balance-popup"));
+}
+
+function getLocalBalanceNow(): number {
+  return Number.parseFloat(localStorage.getItem("idboost_balance") || "0");
+}
 
 export function InsufficientBalancePopup() {
   const balance = useLocalBalance();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showBot, setShowBot] = useState(false);
-  const initialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const showPopup = useCallback(() => {
+    if (getLocalBalanceNow() === 0) {
+      setOpen(true);
+      setShowBot(true);
+      godWarnInsufficientBalance();
+      if (botTimerRef.current) clearTimeout(botTimerRef.current);
+      botTimerRef.current = setTimeout(() => setShowBot(false), 4000);
+    }
+  }, []);
+
+  // Listen for manual trigger from Buy button
   useEffect(() => {
-    if (initialTimerRef.current) clearTimeout(initialTimerRef.current);
+    window.addEventListener("show-balance-popup", showPopup);
+    return () => window.removeEventListener("show-balance-popup", showPopup);
+  }, [showPopup]);
+
+  useEffect(() => {
+    // Clear all previous timers
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
     if (intervalRef.current) clearInterval(intervalRef.current);
-    if (botTimerRef.current) clearTimeout(botTimerRef.current);
 
     if (balance > 0) return;
 
-    const show = () => {
-      if (getLocalBalanceNow() === 0) {
-        setOpen(true);
-        setShowBot(true);
-        // Trigger godSpeak warning (respects aiState.warned flag)
-        godWarnInsufficientBalance();
-        if (botTimerRef.current) clearTimeout(botTimerRef.current);
-        botTimerRef.current = setTimeout(() => setShowBot(false), 4000);
-      }
-    };
+    // 5 sec baad pehla popup
+    timersRef.current.push(setTimeout(showPopup, 5000));
 
-    // First popup after 3 seconds
-    initialTimerRef.current = setTimeout(() => {
-      show();
-      // Then repeat every 25 seconds
-      intervalRef.current = setInterval(show, 25000);
-    }, 3000);
+    // 15 sec baad doosra
+    timersRef.current.push(setTimeout(showPopup, 15000));
+
+    // 25 sec baad teesra, phir har 15 sec repeat
+    timersRef.current.push(
+      setTimeout(() => {
+        showPopup();
+        intervalRef.current = setInterval(showPopup, 15000);
+      }, 25000),
+    );
 
     return () => {
-      if (initialTimerRef.current) clearTimeout(initialTimerRef.current);
+      timersRef.current.forEach(clearTimeout);
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (botTimerRef.current) clearTimeout(botTimerRef.current);
     };
-  }, [balance]);
+  }, [balance, showPopup]);
 
   function handleAddFunds() {
     setOpen(false);
@@ -216,8 +237,4 @@ export function InsufficientBalancePopup() {
       </AnimatePresence>
     </>
   );
-}
-
-function getLocalBalanceNow(): number {
-  return Number.parseFloat(localStorage.getItem("idboost_balance") || "0");
 }

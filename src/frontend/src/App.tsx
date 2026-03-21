@@ -14,6 +14,7 @@ import { HelpChat } from "./components/HelpChat";
 import { InsufficientBalancePopup } from "./components/InsufficientBalancePopup";
 import { LiveOrderToast } from "./components/LiveOrderToast";
 import { LiveTicker } from "./components/LiveTicker";
+import { PurchasePopup } from "./components/PurchasePopup";
 import { TopBar } from "./components/TopBar";
 import { AppProvider } from "./context/AppContext";
 import { useLocalBalance } from "./hooks/useLocalBalance";
@@ -188,6 +189,7 @@ export default function App() {
       <OfferPopup />
       <HelpChat />
       <LiveOrderToast />
+      <PurchasePopup />
       <RouterProvider router={router} />
       <Toaster richColors position="top-right" />
     </AppProvider>
