@@ -107,6 +107,11 @@ const POPUP_MESSAGES: PopupMessage[] = [
   { id: "popular", border: "#a855f7", icon: "🎯", content: <PopupContent5 /> },
 ];
 
+function isOnBlueTickPage(): boolean {
+  const currentPath = window.location.pathname;
+  return currentPath.includes("blue-tick") || currentPath.includes("bluetick");
+}
+
 export function InsufficientBalancePopup() {
   const balance = useLocalBalance();
   const navigate = useNavigate();
@@ -121,6 +126,8 @@ export function InsufficientBalancePopup() {
   const indexRef = useRef<number>(0);
 
   const showPopup = useCallback((bypassGap = false) => {
+    // Block popup if user is on Blue Tick page/section
+    if (isOnBlueTickPage()) return;
     if (getLocalBalanceNow() !== 0) return;
     const now = Date.now();
     if (!bypassGap && now - lastClosedRef.current < 10000) return;
@@ -138,7 +145,11 @@ export function InsufficientBalancePopup() {
 
   // Manual trigger from Buy button — bypass close gap
   useEffect(() => {
-    const handler = () => showPopup(true);
+    const handler = () => {
+      // Block popup if user is on Blue Tick page/section
+      if (isOnBlueTickPage()) return;
+      showPopup(true);
+    };
     window.addEventListener("show-balance-popup", handler);
     return () => window.removeEventListener("show-balance-popup", handler);
   }, [showPopup]);

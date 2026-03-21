@@ -29,6 +29,7 @@ export function BlueTickPage() {
   const [username, setUsername] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [utr, setUtr] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,8 +44,22 @@ export function BlueTickPage() {
   };
 
   const handleBuyNow = () => {
+    const bal = Number.parseFloat(
+      localStorage.getItem("idboost_balance") || "0",
+    );
+    if (bal < 499) {
+      // Direct recharge open — no popup on Blue Tick page
+      navigate({ to: "/" });
+      setTimeout(() => {
+        const el = document.getElementById("quick-recharge");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+        window.dispatchEvent(
+          new CustomEvent("set-selected-amount", { detail: { amount: 499 } }),
+        );
+      }, 200);
+      return;
+    }
     window.location.href = `upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499&cu=INR`;
-    // Auto-add balance after 5s for real feel
     setTimeout(() => {
       addLocalBalance(499);
       toast.success(
@@ -65,8 +80,16 @@ export function BlueTickPage() {
   };
 
   const handleSubmit = () => {
-    if (!username.trim() || !proofFile) {
-      toast.error("Details \u092D\u0930\u0947\u0902");
+    if (!username.trim()) {
+      toast.error("Instagram username \u0921\u093E\u0932\u0947\u0902 \u274C");
+      return;
+    }
+    if (!proofFile) {
+      toast.error("Payment screenshot upload \u0915\u0930\u0947\u0902 \u274C");
+      return;
+    }
+    if (!utr.trim() || utr.trim().length < 10) {
+      toast.error("Valid UTR \u0921\u093E\u0932\u0947\u0902 \u274C");
       return;
     }
     // Save to localStorage for admin panel
@@ -74,15 +97,17 @@ export function BlueTickPage() {
     const newOrder = {
       id: Date.now(),
       username: username.trim(),
+      utr: utr.trim(),
       submittedAt: new Date().toISOString(),
       status: "pending",
     };
     existing.unshift(newOrder);
     localStorage.setItem("blueTickOrders", JSON.stringify(existing));
-    toast.success("Submitted \u2705\nProcessing Started");
+    toast.success("Payment Submitted \u2705\nVerification Pending");
     setUsername("");
     setProofFile(null);
     setProofPreview(null);
+    setUtr("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -250,6 +275,20 @@ export function BlueTickPage() {
             )}
           </div>
         </div>
+
+        {/* UTR Input */}
+        <label htmlFor="bt-utr" className="text-xs text-gray-400 mb-1 block">
+          UPI Ref No / UTR Number
+        </label>
+        <input
+          id="bt-utr"
+          type="text"
+          className="dark-input mb-4"
+          placeholder="Enter UPI Ref No (min 10 digits)"
+          value={utr}
+          onChange={(e) => setUtr(e.target.value)}
+          data-ocid="bluetick.input"
+        />
 
         {/* Payment methods */}
         <div

@@ -25,6 +25,7 @@ export function WalletPage() {
   const [qrError, setQrError] = useState(false);
 
   function handleSelectPlan(plan: Plan) {
+    import("../utils/aiPrediction").then((m) => m.trackClick(plan.amount));
     setSelectedPlan(plan);
     setShowUTR(false);
     setUtr("");
