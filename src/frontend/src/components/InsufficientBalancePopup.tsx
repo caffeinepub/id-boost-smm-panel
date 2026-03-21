@@ -12,68 +12,174 @@ function getLocalBalanceNow(): number {
   return Number.parseFloat(localStorage.getItem("idboost_balance") || "0");
 }
 
+type PopupMessage = {
+  id: string;
+  border: string;
+  icon: string;
+  content: React.ReactNode;
+};
+
+function PopupContent1() {
+  return (
+    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
+      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
+        Special Offer
+      </div>
+      <div style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 18 }}>
+        ₹250 + ₹60 Bonus
+      </div>
+      <div style={{ marginTop: 6, opacity: 0.9 }}>Pay ₹250 → Get ₹310</div>
+    </div>
+  );
+}
+
+function PopupContent2() {
+  return (
+    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
+      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
+        Blue Tick Offer
+      </div>
+      <img
+        src="/assets/uploads/20260321_003208-1.png"
+        width={50}
+        style={{
+          filter: "drop-shadow(0 0 10px #3b82f6)",
+          margin: "6px auto",
+          display: "block",
+        }}
+        alt="Blue Tick Badge"
+      />
+      <div style={{ color: "#3b82f6", fontWeight: "bold", fontSize: 18 }}>
+        ₹499 Only
+      </div>
+      <div style={{ marginTop: 6, opacity: 0.9 }}>Extra ₹141 Bonus 🔥</div>
+    </div>
+  );
+}
+
+function PopupContent3() {
+  return (
+    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
+      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
+        Low Balance
+      </div>
+      <div style={{ color: "#ff5a2c", fontWeight: "bold", fontSize: 18 }}>
+        आपका बैलेंस ₹0 है
+      </div>
+      <div style={{ marginTop: 6, opacity: 0.9 }}>पहले फंड ऐड करें</div>
+    </div>
+  );
+}
+
+function PopupContent4() {
+  return (
+    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
+      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
+        Recharge Now
+      </div>
+      <div style={{ color: "#22c55e", fontWeight: "bold", fontSize: 18 }}>
+        ₹150 से शुरू करें
+      </div>
+      <div style={{ marginTop: 6, opacity: 0.9 }}>+ Bonus पाएँ</div>
+    </div>
+  );
+}
+
+function PopupContent5() {
+  return (
+    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
+      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
+        Most Popular Plan
+      </div>
+      <div style={{ color: "#a855f7", fontWeight: "bold", fontSize: 18 }}>
+        ₹250 सबसे ज्यादा खरीदा जाता है
+      </div>
+      <div style={{ marginTop: 6, opacity: 0.9 }}>⭐ Best Seller</div>
+    </div>
+  );
+}
+
+const POPUP_MESSAGES: PopupMessage[] = [
+  { id: "offer", border: "#f59e0b", icon: "🔥", content: <PopupContent1 /> },
+  { id: "bluetick", border: "#3b82f6", icon: "💎", content: <PopupContent2 /> },
+  { id: "lowbal", border: "#ff5a2c", icon: "⚠️", content: <PopupContent3 /> },
+  { id: "recharge", border: "#22c55e", icon: "💰", content: <PopupContent4 /> },
+  { id: "popular", border: "#a855f7", icon: "🎯", content: <PopupContent5 /> },
+];
+
 export function InsufficientBalancePopup() {
   const balance = useLocalBalance();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showBot, setShowBot] = useState(false);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [popupIndex, setPopupIndex] = useState(0);
 
-  const showPopup = useCallback(() => {
-    if (getLocalBalanceNow() === 0) {
-      setOpen(true);
-      setShowBot(true);
-      godWarnInsufficientBalance();
-      if (botTimerRef.current) clearTimeout(botTimerRef.current);
-      botTimerRef.current = setTimeout(() => setShowBot(false), 4000);
-    }
+  const lastClosedRef = useRef<number>(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const firstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const indexRef = useRef<number>(0);
+
+  const showPopup = useCallback((bypassGap = false) => {
+    if (getLocalBalanceNow() !== 0) return;
+    const now = Date.now();
+    if (!bypassGap && now - lastClosedRef.current < 10000) return;
+
+    const next = (indexRef.current + 1) % POPUP_MESSAGES.length;
+    indexRef.current = next;
+    setPopupIndex(next);
+    setOpen(true);
+    setShowBot(true);
+    godWarnInsufficientBalance();
+
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    botTimerRef.current = setTimeout(() => setShowBot(false), 4000);
   }, []);
 
-  // Listen for manual trigger from Buy button
+  // Manual trigger from Buy button — bypass close gap
   useEffect(() => {
-    window.addEventListener("show-balance-popup", showPopup);
-    return () => window.removeEventListener("show-balance-popup", showPopup);
+    const handler = () => showPopup(true);
+    window.addEventListener("show-balance-popup", handler);
+    return () => window.removeEventListener("show-balance-popup", handler);
   }, [showPopup]);
 
+  // Auto timing: 3s first trigger, then every 10s
   useEffect(() => {
-    // Clear all previous timers
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
+    if (firstTimerRef.current) clearTimeout(firstTimerRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     if (balance > 0) return;
 
-    // 5 sec baad pehla popup
-    timersRef.current.push(setTimeout(showPopup, 5000));
-
-    // 15 sec baad doosra
-    timersRef.current.push(setTimeout(showPopup, 15000));
-
-    // 25 sec baad teesra, phir har 15 sec repeat
-    timersRef.current.push(
-      setTimeout(() => {
-        showPopup();
-        intervalRef.current = setInterval(showPopup, 15000);
-      }, 25000),
-    );
+    firstTimerRef.current = setTimeout(() => {
+      showPopup();
+      intervalRef.current = setInterval(() => showPopup(), 10000);
+    }, 3000);
 
     return () => {
-      timersRef.current.forEach(clearTimeout);
+      if (firstTimerRef.current) clearTimeout(firstTimerRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (botTimerRef.current) clearTimeout(botTimerRef.current);
     };
   }, [balance, showPopup]);
 
-  function handleAddFunds() {
+  function handleClose() {
+    lastClosedRef.current = Date.now();
     setOpen(false);
+  }
+
+  function handleAddFunds() {
+    handleClose();
     navigate({ to: "/" });
     setTimeout(() => {
       const el = document.getElementById("quick-recharge");
       if (el) el.scrollIntoView({ behavior: "smooth" });
+      window.dispatchEvent(
+        new CustomEvent("set-selected-amount", { detail: { amount: 250 } }),
+      );
     }, 200);
   }
+
+  const current = POPUP_MESSAGES[popupIndex];
 
   return (
     <>
@@ -103,7 +209,7 @@ export function InsufficientBalancePopup() {
         )}
       </AnimatePresence>
 
-      {/* Main popup */}
+      {/* Main sequence popup */}
       <AnimatePresence>
         {open && (
           <div
@@ -113,17 +219,18 @@ export function InsufficientBalancePopup() {
               left: 0,
               width: "100%",
               height: "100%",
-              background: "rgba(0,0,0,0.8)",
+              background: "rgba(0,0,0,0.82)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               zIndex: 9999,
             }}
-            onClick={() => setOpen(false)}
-            onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+            onClick={handleClose}
+            onKeyDown={(e) => e.key === "Escape" && handleClose()}
             tabIndex={-1}
           >
             <motion.div
+              key={current.id}
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.7, opacity: 0 }}
@@ -133,24 +240,25 @@ export function InsufficientBalancePopup() {
                 width: "90%",
                 maxWidth: 400,
                 background: "#1c1c1c",
-                border: "3px solid #ff5a2c",
+                border: `3px solid ${current.border}`,
                 borderRadius: 20,
                 padding: 25,
                 textAlign: "center",
               }}
             >
+              {/* Header row */}
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 12,
+                  marginBottom: 14,
                 }}
               >
-                <span style={{ fontSize: 28, color: "#ff5a2c" }}>⚠</span>
+                <span style={{ fontSize: 26 }}>{current.icon}</span>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={handleClose}
                   data-ocid="balance_popup.close_button"
                   style={{
                     fontSize: 22,
@@ -165,71 +273,70 @@ export function InsufficientBalancePopup() {
                 </button>
               </div>
 
-              <h2
-                style={{
-                  color: "#ff5a2c",
-                  fontSize: 22,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                }}
-              >
-                Insufficient Balance
-              </h2>
+              {/* Message content */}
+              <div style={{ marginBottom: 20 }}>{current.content}</div>
 
-              <p style={{ color: "white", marginBottom: 6 }}>
-                Your balance is currently{" "}
-                <span style={{ color: "red", fontWeight: "bold" }}>₹0</span>.
-              </p>
-
-              <p
+              {/* Add Funds button */}
+              <button
+                type="button"
+                onClick={handleAddFunds}
+                data-ocid="balance_popup.primary_button"
                 style={{
-                  fontSize: 14,
-                  opacity: 0.8,
+                  width: "100%",
+                  padding: "12px",
+                  background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+                  border: "none",
                   color: "white",
-                  marginBottom: 20,
+                  borderRadius: 10,
+                  marginBottom: 10,
+                  cursor: "pointer",
+                  fontSize: 15,
+                  fontWeight: "bold",
                 }}
               >
-                आपके पास पर्याप्त शेष नहीं है। कृपया पहले फंड जोड़ें।
-              </p>
+                💳 Add Funds
+              </button>
 
-              <div>
-                <button
-                  type="button"
-                  onClick={handleAddFunds}
-                  data-ocid="balance_popup.primary_button"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    background: "#ff5a2c",
-                    border: "none",
-                    color: "white",
-                    borderRadius: 10,
-                    marginBottom: 10,
-                    cursor: "pointer",
-                    fontSize: 15,
-                    fontWeight: "bold",
-                  }}
-                >
-                  💳 Add Funds
-                </button>
+              {/* Close button */}
+              <button
+                type="button"
+                onClick={handleClose}
+                data-ocid="balance_popup.cancel_button"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#333",
+                  border: "none",
+                  color: "white",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontSize: 15,
+                }}
+              >
+                ❌ Close
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  data-ocid="balance_popup.cancel_button"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    background: "#333",
-                    border: "none",
-                    color: "white",
-                    borderRadius: 10,
-                    cursor: "pointer",
-                    fontSize: 15,
-                  }}
-                >
-                  🔙 Go Back
-                </button>
+              {/* Sequence indicator dots */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 14,
+                }}
+              >
+                {POPUP_MESSAGES.map((msg, i) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: i === popupIndex ? current.border : "#444",
+                      transition: "background 0.3s",
+                    }}
+                  />
+                ))}
               </div>
             </motion.div>
           </div>

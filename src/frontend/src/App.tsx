@@ -17,7 +17,7 @@ import { LiveTicker } from "./components/LiveTicker";
 import { PurchasePopup } from "./components/PurchasePopup";
 import { TopBar } from "./components/TopBar";
 import { AppProvider } from "./context/AppContext";
-import { useLocalBalance } from "./hooks/useLocalBalance";
+import { useLocalBalance, useSelectedAmount } from "./hooks/useLocalBalance";
 import { AIToolsPage } from "./pages/AIToolsPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
@@ -65,28 +65,41 @@ function OfferPopup() {
   return null;
 }
 
-function RootLayout() {
+function RechargeBanner() {
   const balance = useLocalBalance();
+  const selectedAmount = useSelectedAmount();
+
+  if (balance !== 0) return null;
+
+  const label =
+    selectedAmount > 0
+      ? `🎁 Recharge ₹${selectedAmount} Get Bonus`
+      : "🎁 Recharge ₹150 Get ₹30 Bonus";
+
+  return (
+    <div
+      style={{
+        background: "linear-gradient(90deg, #00ffcc, #00ccff)",
+        padding: "8px",
+        textAlign: "center",
+        fontWeight: "bold",
+        color: "black",
+        fontSize: "14px",
+      }}
+      data-ocid="home.panel"
+    >
+      {label}
+    </div>
+  );
+}
+
+function RootLayout() {
   return (
     <div className="min-h-screen">
       <TopBar />
       <div className="pt-[57px]">
         <LiveTicker />
-        {balance === 0 && (
-          <div
-            style={{
-              background: "linear-gradient(90deg, #00ffcc, #00ccff)",
-              padding: "8px",
-              textAlign: "center",
-              fontWeight: "bold",
-              color: "black",
-              fontSize: "14px",
-            }}
-            data-ocid="home.panel"
-          >
-            🎁 Recharge ₹150 Get ₹30 Bonus
-          </div>
-        )}
+        <RechargeBanner />
         <div className="pb-20">
           <Outlet />
         </div>
