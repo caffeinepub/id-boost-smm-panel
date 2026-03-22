@@ -2,7 +2,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { addLocalBalance } from "../hooks/useLocalBalance";
 
 const UPI_ID = "mohd4143@ptyes";
 const UPI_NAME = "IDBOOST";
@@ -44,72 +43,6 @@ export function BlueTickPage() {
     }
   };
 
-  const handleBuyNow = () => {
-    const bal = Number.parseFloat(
-      localStorage.getItem("idboost_balance") || "0",
-    );
-    if (bal < 499) {
-      navigate({ to: "/" });
-      setTimeout(() => {
-        const el = document.getElementById("quick-recharge");
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-        window.dispatchEvent(
-          new CustomEvent("set-selected-amount", { detail: { amount: 499 } }),
-        );
-      }, 200);
-      return;
-    }
-    window.location.href = `upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499&cu=INR`;
-    setTimeout(() => {
-      addLocalBalance(499);
-      toast.success(
-        "\u2705 Payment Successful \u{1F48E} Blue Tick Processing!",
-        {
-          style: {
-            background: "linear-gradient(135deg, #1e3a8a, #1d4ed8)",
-            border: "1px solid rgba(56,189,248,0.5)",
-            color: "#fff",
-            borderRadius: "16px",
-          },
-        },
-      );
-      speakHindi(
-        "sir aapka payment safal ho gaya hai, balance add kar diya gaya hai",
-      );
-    }, 5000);
-  };
-
-  const handleSubmit = () => {
-    if (!username.trim()) {
-      toast.error("Instagram username \u0921\u093E\u0932\u0947\u0902 \u274C");
-      return;
-    }
-    if (!proofFile) {
-      toast.error("Payment screenshot upload \u0915\u0930\u0947\u0902 \u274C");
-      return;
-    }
-    if (!utr.trim() || utr.trim().length < 10) {
-      toast.error("Valid UTR \u0921\u093E\u0932\u0947\u0902 \u274C");
-      return;
-    }
-    const existing = JSON.parse(localStorage.getItem("blueTickOrders") || "[]");
-    const newOrder = {
-      id: Date.now(),
-      username: username.trim(),
-      utr: utr.trim(),
-      submittedAt: new Date().toISOString(),
-      status: "pending",
-    };
-    existing.unshift(newOrder);
-    localStorage.setItem("blueTickOrders", JSON.stringify(existing));
-    toast.success("Payment Submitted \u2705\nVerification Pending");
-    setUsername("");
-    setProofFile(null);
-    setProofPreview(null);
-    setUtr("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   // payBox handlers
   const payNow = () => {
     window.location.href = `upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499&cu=INR`;
@@ -132,6 +65,34 @@ export function BlueTickPage() {
       alert("Invalid UTR ❌");
       return;
     }
+    if (!username.trim()) {
+      toast.error("Instagram username डालें ❌");
+      return;
+    }
+    if (!proofFile) {
+      toast.error("Payment screenshot upload करें ❌");
+      return;
+    }
+    const existing = JSON.parse(localStorage.getItem("blueTickOrders") || "[]");
+    const newOrder = {
+      id: Date.now(),
+      username: username.trim(),
+      utr: payUtr.trim(),
+      submittedAt: new Date().toISOString(),
+      status: "pending",
+    };
+    existing.unshift(newOrder);
+    localStorage.setItem("blueTickOrders", JSON.stringify(existing));
+    toast.success("Payment Submitted ✅\nVerification Pending");
+    speakHindi(
+      "sir aapka payment submit ho gaya hai, verification pending hai",
+    );
+    setUsername("");
+    setProofFile(null);
+    setProofPreview(null);
+    setUtr("");
+    setPayUtr("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
     alert("Payment Submitted ✅");
   };
 
@@ -309,56 +270,12 @@ export function BlueTickPage() {
         <input
           id="bt-utr"
           type="text"
-          className="dark-input mb-4"
+          className="dark-input mb-2"
           placeholder="Enter UPI Ref No (min 10 digits)"
           value={utr}
           onChange={(e) => setUtr(e.target.value)}
           data-ocid="bluetick.input"
         />
-
-        {/* Payment methods */}
-        <div
-          className="rounded-xl p-3 mb-4 text-center"
-          style={{
-            background: "rgba(0,0,0,0.3)",
-            border: "1px solid rgba(56,189,248,0.15)",
-          }}
-        >
-          <p className="text-gray-400 text-xs mb-1">Accepted via</p>
-          <p className="text-white text-sm font-semibold">
-            &#x1F4F1; PhonePe &nbsp;|&nbsp; &#x1F499; GPay &nbsp;|&nbsp;
-            &#x1F49B; Paytm &nbsp;|&nbsp; &#x1F3E6; BHIM
-          </p>
-          <p className="text-blue-300 text-xs mt-1 font-mono">{UPI_ID}</p>
-        </div>
-
-        {/* Buy Now */}
-        <button
-          type="button"
-          onClick={handleBuyNow}
-          className="neon-btn w-full py-3 rounded-xl text-white font-bold text-base mb-3"
-          style={{
-            background: "linear-gradient(135deg, #0369a1, #38bdf8)",
-            boxShadow: "0 0 24px rgba(56,189,248,0.5)",
-          }}
-          data-ocid="bluetick.primary_button"
-        >
-          &#x26A1; Buy Now &#8377;499
-        </button>
-
-        {/* Submit Payment */}
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="w-full py-3 rounded-xl text-white font-bold text-base transition-all duration-200 active:scale-95"
-          style={{
-            background: "linear-gradient(135deg, #16a34a, #22c55e)",
-            boxShadow: "0 0 20px rgba(34,197,94,0.4)",
-          }}
-          data-ocid="bluetick.submit_button"
-        >
-          &#x2705; Submit Payment
-        </button>
       </motion.div>
 
       {/* ===== PAY BOX ===== */}
