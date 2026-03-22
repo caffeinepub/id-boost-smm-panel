@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { AIPredictivePopup } from "./components/AIPredictivePopup";
 import { BottomNav } from "./components/BottomNav";
 import { GodSpeakAI } from "./components/GodSpeakAI";
 import { HelpChat } from "./components/HelpChat";
@@ -203,7 +202,6 @@ export default function App() {
       <OfferPopup />
       <HelpChat />
       <LiveOrderToast />
-      <AIPredictivePopup />
       <PurchasePopup />
       <RouterProvider router={router} />
       <Toaster richColors position="top-right" />

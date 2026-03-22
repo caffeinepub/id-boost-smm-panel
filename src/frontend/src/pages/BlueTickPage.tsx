@@ -30,6 +30,7 @@ export function BlueTickPage() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [utr, setUtr] = useState("");
+  const [payUtr, setPayUtr] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +49,6 @@ export function BlueTickPage() {
       localStorage.getItem("idboost_balance") || "0",
     );
     if (bal < 499) {
-      // Direct recharge open — no popup on Blue Tick page
       navigate({ to: "/" });
       setTimeout(() => {
         const el = document.getElementById("quick-recharge");
@@ -92,7 +92,6 @@ export function BlueTickPage() {
       toast.error("Valid UTR \u0921\u093E\u0932\u0947\u0902 \u274C");
       return;
     }
-    // Save to localStorage for admin panel
     const existing = JSON.parse(localStorage.getItem("blueTickOrders") || "[]");
     const newOrder = {
       id: Date.now(),
@@ -110,6 +109,33 @@ export function BlueTickPage() {
     setUtr("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  // payBox handlers
+  const payNow = () => {
+    window.location.href = `upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499&cu=INR`;
+  };
+
+  const openGpay = () => {
+    window.location.href = `tez://upi/pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499`;
+  };
+
+  const openPhonePe = () => {
+    window.location.href = `phonepe://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499`;
+  };
+
+  const openPaytm = () => {
+    window.location.href = `paytmmp://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499`;
+  };
+
+  const verifyPayment = () => {
+    if (!payUtr || payUtr.length < 10) {
+      alert("Invalid UTR ❌");
+      return;
+    }
+    alert("Payment Submitted ✅");
+  };
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=499&cu=INR`;
 
   return (
     <main className="max-w-[430px] mx-auto px-3 pb-8" data-ocid="bluetick.page">
@@ -333,6 +359,190 @@ export function BlueTickPage() {
         >
           &#x2705; Submit Payment
         </button>
+      </motion.div>
+
+      {/* ===== PAY BOX ===== */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45, duration: 0.45 }}
+        className="mb-4"
+        data-ocid="bluetick.panel"
+      >
+        <div
+          style={{
+            textAlign: "center",
+            padding: "20px",
+            background: "#0f172a",
+            borderRadius: "15px",
+            border: "1px solid rgba(56,189,248,0.2)",
+            boxShadow: "0 0 30px rgba(56,189,248,0.15)",
+          }}
+        >
+          <h2
+            style={{
+              color: "#38bdf8",
+              marginBottom: "12px",
+              fontSize: "1.1rem",
+              fontWeight: 700,
+            }}
+          >
+            💎 Blue Tick ₹499
+          </h2>
+
+          {/* QR Code */}
+          <img
+            src={qrUrl}
+            alt="UPI QR Code"
+            style={{
+              width: "200px",
+              margin: "10px auto",
+              display: "block",
+              borderRadius: "12px",
+              border: "2px solid rgba(56,189,248,0.3)",
+              filter: "drop-shadow(0 0 8px rgba(56,189,248,0.4))",
+            }}
+          />
+
+          <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "8px 0" }}>
+            UPI ID:{" "}
+            <span style={{ color: "#38bdf8", fontWeight: 600 }}>{UPI_ID}</span>
+          </p>
+
+          <h3
+            style={{ color: "#e2e8f0", margin: "10px 0", fontSize: "0.95rem" }}
+          >
+            📲 Scan &amp; Pay ₹499
+          </h3>
+
+          {/* Main Pay Button */}
+          <button
+            type="button"
+            onClick={payNow}
+            style={{
+              background: "#22c55e",
+              padding: "12px",
+              border: "none",
+              borderRadius: "10px",
+              width: "100%",
+              color: "white",
+              marginTop: "10px",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "1rem",
+              boxShadow: "0 0 16px rgba(34,197,94,0.4)",
+            }}
+            data-ocid="bluetick.primary_button"
+          >
+            ⚡ Buy Now ₹499
+          </button>
+
+          {/* App Buttons */}
+          <div
+            style={{
+              marginTop: "12px",
+              display: "flex",
+              justifyContent: "center",
+              gap: "6px",
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              onClick={openGpay}
+              style={{
+                margin: "5px",
+                padding: "10px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#1e293b",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              data-ocid="bluetick.secondary_button"
+            >
+              GPay
+            </button>
+            <button
+              type="button"
+              onClick={openPhonePe}
+              style={{
+                margin: "5px",
+                padding: "10px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#1e293b",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              data-ocid="bluetick.secondary_button"
+            >
+              PhonePe
+            </button>
+            <button
+              type="button"
+              onClick={openPaytm}
+              style={{
+                margin: "5px",
+                padding: "10px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#1e293b",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              data-ocid="bluetick.secondary_button"
+            >
+              Paytm
+            </button>
+          </div>
+
+          {/* UTR Input */}
+          <input
+            id="utrInput"
+            type="text"
+            placeholder="Enter UTR Number"
+            value={payUtr}
+            onChange={(e) => setPayUtr(e.target.value)}
+            style={{
+              width: "calc(100% - 24px)",
+              padding: "10px 12px",
+              margin: "12px 0 0",
+              borderRadius: "10px",
+              border: "1px solid rgba(56,189,248,0.3)",
+              background: "#1e293b",
+              color: "white",
+              fontSize: "0.9rem",
+              outline: "none",
+            }}
+            data-ocid="bluetick.input"
+          />
+
+          {/* Verify Payment Button */}
+          <button
+            type="button"
+            onClick={verifyPayment}
+            style={{
+              background: "#f97316",
+              padding: "12px",
+              border: "none",
+              borderRadius: "10px",
+              width: "100%",
+              marginTop: "10px",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "1rem",
+              boxShadow: "0 0 16px rgba(249,115,22,0.4)",
+            }}
+            data-ocid="bluetick.submit_button"
+          >
+            ✅ Verify Payment
+          </button>
+        </div>
       </motion.div>
 
       {/* Safety notice */}

@@ -572,12 +572,7 @@ export function HomePage() {
               <motion.button
                 key={plan.amount}
                 type="button"
-                onClick={() => {
-                  setSelectedPlan(plan);
-                  import("../utils/aiPrediction").then((m) =>
-                    m.trackClick(plan.amount),
-                  );
-                }}
+                onClick={() => setSelectedPlan(plan)}
                 whileHover={{
                   boxShadow:
                     "0 0 20px #3b82f6, 0 0 40px #9333ea, 5px 5px 15px #000",

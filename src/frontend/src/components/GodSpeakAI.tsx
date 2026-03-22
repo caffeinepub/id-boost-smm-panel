@@ -111,14 +111,6 @@ export function GodSpeakAI() {
     };
     document.addEventListener("mouseout", handleMouseOut);
 
-    // ── Auto voice: 8s and 15s after load ──
-    const timer8 = setTimeout(() => {
-      smartSpeak("Sir aapka balance kam hai, pehle fund add karein", 60000);
-    }, 8000);
-    const timer15 = setTimeout(() => {
-      smartSpeak("250 rupaye plan sabse zyada kharida jaata hai", 60000);
-    }, 15000);
-
     // ── 30s periodic reset of warned + idleSpoken ──
     const resetTimer = setInterval(() => {
       aiState.warned = false;
@@ -129,8 +121,6 @@ export function GodSpeakAI() {
 
     return () => {
       clearTimeout(visitTimer);
-      clearTimeout(timer8);
-      clearTimeout(timer15);
       if (idleRef.current) clearInterval(idleRef.current);
       clearInterval(resetTimer);
       document.removeEventListener("click", handleClick);
