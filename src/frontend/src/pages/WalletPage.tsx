@@ -1,7 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { RefundHistory } from "../components/RefundHistory";
+import { RefundModal } from "../components/RefundModal";
 import { useAppContext } from "../context/AppContext";
+import { useRefunds } from "../hooks/useRefunds";
+
+const UPI_ID = "mohd4143@ptyes";
+const UPI_NAME = "IDBOOST";
 
 const PLANS = [
   { amount: 150, bonus: 30 },
@@ -17,12 +24,16 @@ export function WalletPage() {
   const { userProfile } = useAppContext();
   const balance = userProfile?.balance?.toFixed(2) ?? "0.00";
   const navigate = useNavigate();
+  const { hasPending } = useRefunds();
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[1]); // ₹250 auto-selected
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[1]);
   const [showUTR, setShowUTR] = useState(false);
   const [utr, setUtr] = useState("");
   const [utrSubmitted, setUtrSubmitted] = useState(false);
   const [qrError, setQrError] = useState(false);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+
+  const rechargeRef = useRef<HTMLDivElement>(null);
 
   function handleSelectPlan(plan: Plan) {
     setSelectedPlan(plan);
@@ -31,16 +42,40 @@ export function WalletPage() {
     setUtrSubmitted(false);
   }
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=mohd4143@ptyes&pn=IDBOOST&am=${selectedPlan.amount}&cu=INR`)}`;
+  function scrollToRecharge() {
+    rechargeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`)}`;
 
   function handlePayNow() {
-    window.location.href = `upi://pay?pa=mohd4143@ptyes&pn=IDBOOST&am=${selectedPlan.amount}&cu=INR`;
+    window.location.href = `upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`;
     setShowUTR(true);
+  }
+
+  function handleUpiAppPay(app: "gpay" | "phonepe" | "paytm") {
+    const links: Record<string, string> = {
+      gpay: `tez://upi/pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`,
+      phonepe: `phonepe://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`,
+      paytm: `paytmmp://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`,
+    };
+    window.location.href = links[app];
+    setShowUTR(true);
+    toast("App se payment karo phir UTR darj karo", {
+      style: {
+        background: "linear-gradient(135deg, #1e293b, #0f172a)",
+        border: "1px solid rgba(59,130,246,0.5)",
+        color: "#fff",
+        borderRadius: "16px",
+      },
+    });
   }
 
   function handleVerifyUTR() {
     if (utr.length < 10) {
-      alert("❌ Invalid UPI Ref No. कम से कम 10 अक्षर होने चाहिए");
+      alert(
+        "\u274C Invalid UPI Ref No. \u0915\u092E \u0938\u0947 \u0915\u092E 10 \u0905\u0915\u094D\u0937\u0930 \u0939\u094B\u0928\u0947 \u091A\u093E\u0939\u093F\u090F",
+      );
       return;
     }
     const pending = JSON.parse(localStorage.getItem("pendingUTR") || "[]");
@@ -88,26 +123,183 @@ export function WalletPage() {
         💰 My Wallet
       </motion.h1>
 
-      {/* Balance Card */}
+      {/* VIP Balance Card */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="glass-card p-6 mb-4 text-center"
         data-ocid="wallet.card"
+        className="relative overflow-hidden mb-5"
+        style={{
+          background:
+            "linear-gradient(135deg, #0f1f3d 0%, #1a1040 50%, #0f1f3d 100%)",
+          border: "1px solid rgba(212,175,55,0.35)",
+          borderRadius: "18px",
+          boxShadow:
+            "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(212,175,55,0.15)",
+          padding: "24px 20px 20px",
+        }}
       >
-        <p className="text-gray-400 text-sm mb-2">Current Balance</p>
-        <p
-          className="text-5xl font-black text-green-400 mb-1"
-          style={{ textShadow: "0 0 20px rgba(34,197,94,0.5)" }}
+        {/* Shimmer overlay */}
+        <div
+          className="vip-shimmer"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(105deg, transparent 40%, rgba(212,175,55,0.08) 50%, transparent 60%)",
+            backgroundSize: "200% 100%",
+            animation: "shimmer 2.5s infinite linear",
+            pointerEvents: "none",
+            borderRadius: "18px",
+          }}
+        />
+
+        {/* VIP Badge row */}
+        <div className="flex items-center justify-between mb-4">
+          <span
+            style={{
+              background: "linear-gradient(90deg, #b8860b, #ffd700)",
+              color: "#000",
+              fontWeight: 700,
+              fontSize: "11px",
+              padding: "3px 10px",
+              borderRadius: "20px",
+              letterSpacing: "0.06em",
+            }}
+          >
+            👑 VIP MEMBER
+          </span>
+          <span style={{ color: "rgba(212,175,55,0.5)", fontSize: "20px" }}>
+            ◈
+          </span>
+        </div>
+
+        {/* Balance Amount */}
+        <div className="text-center mb-4">
+          <p
+            style={{
+              fontSize: "52px",
+              fontWeight: 800,
+              color: "#ffffff",
+              textShadow: "0 0 30px rgba(212,175,55,0.4)",
+              lineHeight: 1,
+              fontFamily: "Bricolage Grotesque, sans-serif",
+              letterSpacing: "-1px",
+            }}
+          >
+            ₹{balance}
+          </p>
+          <p
+            style={{
+              color: "rgba(212,175,55,0.6)",
+              fontSize: "12px",
+              fontWeight: 500,
+              marginTop: "6px",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            Available Balance
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div
+          style={{
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)",
+            marginBottom: "16px",
+          }}
+        />
+
+        {/* Quick Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={scrollToRecharge}
+            data-ocid="wallet.primary_button"
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              borderRadius: "10px",
+              background: "transparent",
+              border: "1.5px solid rgba(59,130,246,0.55)",
+              color: "#93c5fd",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.18s",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "rgba(59,130,246,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "transparent";
+            }}
+          >
+            + Add Funds
+          </button>
+          <button
+            type="button"
+            onClick={() => setRefundModalOpen(true)}
+            disabled={hasPending}
+            data-ocid="wallet.open_modal_button"
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              borderRadius: "10px",
+              background: "transparent",
+              border: "1.5px solid rgba(148,163,184,0.35)",
+              color: hasPending ? "#4b5563" : "#94a3b8",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: hasPending ? "not-allowed" : "pointer",
+              opacity: hasPending ? 0.6 : 1,
+              transition: "all 0.18s",
+            }}
+            onMouseEnter={(e) => {
+              if (!hasPending)
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "rgba(148,163,184,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "transparent";
+            }}
+          >
+            ↩ {hasPending ? "Pending" : "Request Refund"}
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Refund History */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.14 }}
+        style={{ marginBottom: "16px" }}
+      >
+        <h2
+          style={{
+            color: "#e5e7eb",
+            fontWeight: 700,
+            fontSize: "15px",
+            marginBottom: "10px",
+            paddingLeft: "4px",
+          }}
         >
-          ₹{balance}
-        </p>
-        <p className="text-gray-500 text-xs">Available for orders</p>
+          Refund History
+        </h2>
+        <RefundHistory />
       </motion.div>
 
       {/* Quick Recharge Section */}
       <motion.div
+        ref={rechargeRef}
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
@@ -234,8 +426,51 @@ export function WalletPage() {
             onError={() => setQrError(true)}
           />
           <p className="text-xs text-gray-400 mt-2">
-            Scan & Pay ₹{selectedPlan.amount} • UPI: mohd4143@ptyes
+            Scan & Pay ₹{selectedPlan.amount} • UPI: {UPI_ID}
           </p>
+        </div>
+
+        {/* UPI App Buttons */}
+        <div className="flex gap-2 mb-3">
+          <button
+            type="button"
+            onClick={() => handleUpiAppPay("gpay")}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: "#0f9d58",
+              boxShadow: "0 0 14px rgba(15,157,88,0.45)",
+              border: "none",
+            }}
+            data-ocid="wallet.primary_button"
+          >
+            🟢 GPay
+          </button>
+          <button
+            type="button"
+            onClick={() => handleUpiAppPay("phonepe")}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: "#5f259f",
+              boxShadow: "0 0 14px rgba(95,37,159,0.45)",
+              border: "none",
+            }}
+            data-ocid="wallet.primary_button"
+          >
+            🟣 PhonePe
+          </button>
+          <button
+            type="button"
+            onClick={() => handleUpiAppPay("paytm")}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: "#002970",
+              boxShadow: "0 0 14px rgba(0,41,112,0.45)",
+              border: "1px solid rgba(59,130,246,0.3)",
+            }}
+            data-ocid="wallet.primary_button"
+          >
+            🟡 Paytm
+          </button>
         </div>
 
         {/* Pay Now Button */}
@@ -336,7 +571,7 @@ export function WalletPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
-        className="glass-card p-5"
+        className="glass-card p-5 mb-4"
         data-ocid="wallet.panel"
       >
         <h2 className="text-lg font-bold text-white mb-4">
@@ -350,6 +585,24 @@ export function WalletPage() {
           </p>
         </div>
       </motion.div>
+
+      {/* Trust Footer */}
+      <p
+        style={{
+          color: "#4b5563",
+          fontSize: "11px",
+          textAlign: "center",
+          padding: "12px 0 4px",
+        }}
+      >
+        Refund processed within 72 hours&nbsp;&nbsp;•&nbsp;&nbsp;100% secure
+        system&nbsp;&nbsp;•&nbsp;&nbsp;No hidden charges
+      </p>
+
+      <RefundModal
+        isOpen={refundModalOpen}
+        onClose={() => setRefundModalOpen(false)}
+      />
     </main>
   );
 }

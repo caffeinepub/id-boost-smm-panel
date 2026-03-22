@@ -41,6 +41,11 @@ import {
   useServices,
   useUpdateService,
 } from "../hooks/useQueries";
+import {
+  type RefundRequest,
+  type RefundStatus,
+  useRefunds,
+} from "../hooks/useRefunds";
 
 type BlueTickOrder = {
   id: number;
@@ -314,7 +319,7 @@ function AdminContent() {
         </motion.div>
 
         <Tabs defaultValue="users" data-ocid="admin.tab">
-          <TabsList className="bg-muted grid grid-cols-6 mb-6 w-full max-w-2xl">
+          <TabsList className="bg-muted grid grid-cols-7 mb-6 w-full max-w-2xl">
             <TabsTrigger value="users" data-ocid="admin.tab">
               <Users className="w-4 h-4 mr-1" />
               Users
@@ -336,6 +341,9 @@ function AdminContent() {
             </TabsTrigger>
             <TabsTrigger value="utrdeposits" data-ocid="admin.tab">
               💰 UTR
+            </TabsTrigger>
+            <TabsTrigger value="refunds" data-ocid="admin.tab">
+              ↩ Refunds
             </TabsTrigger>
           </TabsList>
 
@@ -918,8 +926,110 @@ function AdminContent() {
               )}
             </div>
           </TabsContent>
+          <TabsContent value="refunds">
+            <RefundsAdminTab />
+          </TabsContent>
         </Tabs>
       </div>
     </main>
+  );
+}
+
+function RefundsAdminTab() {
+  const { refunds, updateStatus } = useRefunds();
+
+  return (
+    <div className="card-glass rounded-xl p-6" data-ocid="refunds.table">
+      <h2 className="font-bold text-lg mb-4">Refund Requests</h2>
+      {refunds.length === 0 ? (
+        <div className="text-center py-8" data-ocid="refunds.empty_state">
+          <p className="text-muted-foreground text-sm">
+            No refund requests yet.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border">
+                <TableHead>ID</TableHead>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {refunds.map((r: RefundRequest, idx: number) => (
+                <TableRow
+                  key={r.id}
+                  className="border-border"
+                  data-ocid={`refunds.row.${idx + 1}`}
+                >
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {r.id.slice(0, 16)}…
+                  </TableCell>
+                  <TableCell className="font-medium">{r.fullName}</TableCell>
+                  <TableCell>₹{r.amount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    {r.method === "upi" ? "UPI" : "Bank Transfer"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={
+                        r.status === "approved"
+                          ? "bg-green-500/20 text-green-400 border-green-500/30"
+                          : r.status === "rejected"
+                            ? "bg-red-500/20 text-red-400 border-red-500/30"
+                            : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                      }
+                    >
+                      {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.createdAt).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    {r.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white border-0 h-8"
+                          onClick={() =>
+                            updateStatus(r.id, "approved" as RefundStatus)
+                          }
+                          data-ocid={`refunds.confirm_button.${idx + 1}`}
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8"
+                          onClick={() =>
+                            updateStatus(r.id, "rejected" as RefundStatus)
+                          }
+                          data-ocid={`refunds.delete_button.${idx + 1}`}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
   );
 }

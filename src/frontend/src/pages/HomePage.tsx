@@ -7,7 +7,6 @@ import type { Service } from "../backend";
 import { LiveStatsPopup } from "../components/LiveStatsPopup";
 import { OrderLoader } from "../components/OrderLoader";
 import { useAppContext } from "../context/AppContext";
-import { addLocalBalance } from "../hooks/useLocalBalance";
 import { usePlaceOrder, useServices } from "../hooks/useQueries";
 
 const FALLBACK_SERVICES = [
@@ -268,6 +267,30 @@ export function HomePage() {
       },
     });
   };
+
+  function handleUpiAppPay(app: "gpay" | "phonepe" | "paytm") {
+    if (!selectedPlan) {
+      toast.error("Pehle plan chunein");
+      return;
+    }
+    const links: Record<string, string> = {
+      gpay: `tez://upi/pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${parsedRecharge}&cu=INR`,
+      phonepe: `phonepe://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${parsedRecharge}&cu=INR`,
+      paytm: `paytmmp://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${parsedRecharge}&cu=INR`,
+    };
+    window.location.href = links[app];
+    setPaymentDone(true);
+    setUtrValue("");
+    setUtrSubmitted(false);
+    toast("App se payment karo phir UTR darj karo", {
+      style: {
+        background: "linear-gradient(135deg, #1e293b, #0f172a)",
+        border: "1px solid rgba(59,130,246,0.5)",
+        color: "#fff",
+        borderRadius: "16px",
+      },
+    });
+  }
 
   const handleVerifyUTR = () => {
     if (!utrValue.trim()) {
@@ -697,6 +720,50 @@ export function HomePage() {
               >
                 Scan &amp; Pay &#8377;{parsedRecharge.toFixed(2)}
               </p>
+
+              {/* UPI App Buttons */}
+              <div className="flex gap-2 w-full mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleUpiAppPay("gpay")}
+                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+                  style={{
+                    background: "#0f9d58",
+                    boxShadow: "0 0 14px rgba(15,157,88,0.45)",
+                    border: "none",
+                  }}
+                  data-ocid="home.primary_button"
+                >
+                  🟢 GPay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleUpiAppPay("phonepe")}
+                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+                  style={{
+                    background: "#5f259f",
+                    boxShadow: "0 0 14px rgba(95,37,159,0.45)",
+                    border: "none",
+                  }}
+                  data-ocid="home.primary_button"
+                >
+                  🟣 PhonePe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleUpiAppPay("paytm")}
+                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+                  style={{
+                    background: "#002970",
+                    boxShadow: "0 0 14px rgba(0,41,112,0.45)",
+                    border: "1px solid rgba(59,130,246,0.3)",
+                  }}
+                  data-ocid="home.primary_button"
+                >
+                  🟡 Paytm
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={handlePayNow}

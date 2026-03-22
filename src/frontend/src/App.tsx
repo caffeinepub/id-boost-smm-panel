@@ -22,10 +22,12 @@ import { AIToolsPage } from "./pages/AIToolsPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { BlueTickPage } from "./pages/BlueTickPage";
+import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
 import { OrderHistoryPage } from "./pages/OrderHistoryPage";
 import { OrderPage } from "./pages/OrderPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ReportPage } from "./pages/ReportPage";
 import { TermsPage } from "./pages/TermsPage";
 import { WalletPage } from "./pages/WalletPage";
 
@@ -174,6 +176,18 @@ const blueTickRoute = createRoute({
   component: BlueTickPage,
 });
 
+const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history",
+  component: HistoryPage,
+});
+
+const reportRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/report",
+  component: ReportPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   orderRoute,
@@ -185,6 +199,8 @@ const routeTree = rootRoute.addChildren([
   analyticsRoute,
   termsRoute,
   blueTickRoute,
+  historyRoute,
+  reportRoute,
 ]);
 
 const router = createRouter({ routeTree });
