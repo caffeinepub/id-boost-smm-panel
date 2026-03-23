@@ -1,4 +1,3 @@
-import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalBalance } from "../hooks/useLocalBalance";
@@ -108,13 +107,12 @@ const POPUP_MESSAGES: PopupMessage[] = [
 ];
 
 function isOnBlueTickPage(): boolean {
-  const currentPath = window.location.pathname;
-  return currentPath.includes("blue-tick") || currentPath.includes("bluetick");
+  const path = window.location.pathname + window.location.hash;
+  return path.includes("blue-tick") || path.includes("bluetick");
 }
 
 export function InsufficientBalancePopup() {
   const balance = useLocalBalance();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showBot, setShowBot] = useState(false);
   const [popupIndex, setPopupIndex] = useState(0);
@@ -126,7 +124,6 @@ export function InsufficientBalancePopup() {
   const indexRef = useRef<number>(0);
 
   const showPopup = useCallback((bypassGap = false) => {
-    // Block popup if user is on Blue Tick page/section
     if (isOnBlueTickPage()) return;
     if (getLocalBalanceNow() !== 0) return;
     const now = Date.now();
@@ -143,10 +140,8 @@ export function InsufficientBalancePopup() {
     botTimerRef.current = setTimeout(() => setShowBot(false), 4000);
   }, []);
 
-  // Manual trigger from Buy button — bypass close gap
   useEffect(() => {
     const handler = () => {
-      // Block popup if user is on Blue Tick page/section
       if (isOnBlueTickPage()) return;
       showPopup(true);
     };
@@ -154,7 +149,6 @@ export function InsufficientBalancePopup() {
     return () => window.removeEventListener("show-balance-popup", handler);
   }, [showPopup]);
 
-  // Auto timing: 3s first trigger, then every 10s
   useEffect(() => {
     if (firstTimerRef.current) clearTimeout(firstTimerRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -180,14 +174,16 @@ export function InsufficientBalancePopup() {
 
   function handleAddFunds() {
     handleClose();
-    navigate({ to: "/" });
+    if (window.location.pathname !== "/") {
+      window.location.href = "/";
+    }
     setTimeout(() => {
       const el = document.getElementById("quick-recharge");
       if (el) el.scrollIntoView({ behavior: "smooth" });
       window.dispatchEvent(
         new CustomEvent("set-selected-amount", { detail: { amount: 250 } }),
       );
-    }, 200);
+    }, 300);
   }
 
   const current = POPUP_MESSAGES[popupIndex];

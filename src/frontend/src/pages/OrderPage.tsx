@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { triggerInsufficientBalancePopup } from "../components/InsufficientBalancePopup";
 import { OrderLoader } from "../components/OrderLoader";
+import { OrderSuccessModal } from "../components/OrderSuccessModal";
 import { useAppContext } from "../context/AppContext";
 import { usePlaceOrder } from "../hooks/useQueries";
 
@@ -247,6 +248,36 @@ function getLocalBalance(): number {
   return Number.parseFloat(localStorage.getItem("idboost_balance") || "0");
 }
 
+function deductBalance(cost: number) {
+  const current = getLocalBalance();
+  const newBal = Math.max(0, current - cost);
+  localStorage.setItem("idboost_balance", newBal.toFixed(2));
+}
+
+function saveOrderToHistory(entry: {
+  id: string;
+  service: string;
+  platform: string;
+  link: string;
+  quantity: number;
+  amount: string;
+  status: "Pending";
+  date: string;
+}) {
+  const raw = localStorage.getItem("idboost_order_history");
+  const history = raw ? (JSON.parse(raw) as (typeof entry)[]) : [];
+  history.unshift(entry);
+  localStorage.setItem("idboost_order_history", JSON.stringify(history));
+}
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function OrderPage() {
   const { userProfile, refetchProfile } = useAppContext();
   const placeOrder = usePlaceOrder();
@@ -257,6 +288,17 @@ export function OrderPage() {
   const [quantity, setQuantity] = useState("1000");
   const [commentsText, setCommentsText] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [successModal, setSuccessModal] = useState<{
+    visible: boolean;
+    service: string;
+    quantity: string;
+    amount: string;
+  }>({
+    visible: false,
+    service: "",
+    quantity: "",
+    amount: "",
+  });
 
   const platformCfg = PLATFORM_CONFIG[activePlatform];
   const services = platformCfg.services;
@@ -307,7 +349,6 @@ export function OrderPage() {
     : `0 0 15px ${platformCfg.glowColor}`;
 
   const handleOrder = async () => {
-    // Check balance first — show popup immediately if 0
     const localBal = getLocalBalance();
     const backendBal = userProfile?.balance ?? 0;
     const effectiveBal = Math.max(localBal, backendBal);
@@ -340,50 +381,30 @@ export function OrderPage() {
         link: link.trim(),
         quantity: BigInt(qty),
       });
-      toast(
-        <div className="flex items-center gap-2">
-          <span className="text-xl">✅</span>
-          <div>
-            <p className="font-bold text-white text-sm">Order Placed!</p>
-            <p className="text-green-300 text-xs">
-              {svc.label} order confirmed
-            </p>
-          </div>
-        </div>,
-        {
-          duration: 4000,
-          style: {
-            background: "linear-gradient(135deg, #052e16, #0f172a)",
-            border: "1px solid rgba(34,197,94,0.5)",
-            boxShadow: "0 0 20px rgba(34,197,94,0.25)",
-            color: "#fff",
-            borderRadius: "14px",
-          },
-        },
-      );
-      setTimeout(() => {
-        toast(
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⏳</span>
-            <div>
-              <p className="font-bold text-white text-sm">Processing...</p>
-              <p className="text-yellow-300 text-xs">
-                आपकी service pending है (1-2 घंटे)
-              </p>
-            </div>
-          </div>,
-          {
-            duration: 5000,
-            style: {
-              background: "linear-gradient(135deg, #1c1300, #0f172a)",
-              border: "1px solid rgba(234,179,8,0.5)",
-              boxShadow: "0 0 20px rgba(234,179,8,0.2)",
-              color: "#fff",
-              borderRadius: "14px",
-            },
-          },
-        );
-      }, 2000);
+
+      // Deduct balance from localStorage
+      deductBalance(Number(cost));
+
+      // Save to order history
+      saveOrderToHistory({
+        id: `#${Date.now()}`,
+        service: `${platformCfg.label} ${svc.label}`,
+        platform: activePlatform,
+        link: link.trim(),
+        quantity: qty,
+        amount: cost,
+        status: "Pending",
+        date: formatDate(new Date()),
+      });
+
+      // Show 3D success modal
+      setSuccessModal({
+        visible: true,
+        service: `${platformCfg.label} ${svc.label}`,
+        quantity: String(qty),
+        amount: cost,
+      });
+
       setLink("");
       setQuantity("1000");
       setCommentsText("");
@@ -666,7 +687,17 @@ export function OrderPage() {
           {isLive ? "🔴" : platformCfg.emoji} Buy {svc.label}
         </button>
       </motion.div>
+
       <OrderLoader visible={placeOrder.isPending} />
+
+      {/* 3D Success Modal */}
+      <OrderSuccessModal
+        visible={successModal.visible}
+        service={successModal.service}
+        quantity={successModal.quantity}
+        amount={successModal.amount}
+        onClose={() => setSuccessModal((prev) => ({ ...prev, visible: false }))}
+      />
     </main>
   );
 }

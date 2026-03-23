@@ -106,7 +106,6 @@ function RootLayout() {
           <Outlet />
         </div>
       </div>
-      <InsufficientBalancePopup />
       <BottomNav />
     </div>
   );
@@ -219,6 +218,7 @@ export default function App() {
       <HelpChat />
       <LiveOrderToast />
       <PurchasePopup />
+      <InsufficientBalancePopup />
       <RouterProvider router={router} />
       <Toaster richColors position="top-right" />
     </AppProvider>

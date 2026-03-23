@@ -11,7 +11,18 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "refunds", label: "Refunds" },
 ];
 
-const sampleOrders = [
+interface OrderHistoryEntry {
+  id: string;
+  service: string;
+  platform?: string;
+  link?: string;
+  quantity?: number;
+  amount: string | number;
+  status: string;
+  date: string;
+}
+
+const sampleOrders: OrderHistoryEntry[] = [
   {
     id: "#1001",
     service: "Instagram Followers",
@@ -80,6 +91,16 @@ const sampleRefunds = [
   },
 ];
 
+function loadOrderHistory(): OrderHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem("idboost_order_history");
+    if (!raw) return [];
+    return JSON.parse(raw) as OrderHistoryEntry[];
+  } catch {
+    return [];
+  }
+}
+
 function statusColor(status: string) {
   if (status === "Pending") return "#f97316";
   if (status === "Completed" || status === "Success") return "#22c55e";
@@ -119,7 +140,12 @@ export function HistoryPage() {
   const [activeTab, setActiveTab] = useState<TabId>("orders");
   const [search, setSearch] = useState("");
 
-  const filteredOrders = sampleOrders.filter((o) =>
+  // Merge real orders first, then sample fallback
+  const realOrders = loadOrderHistory();
+  const allOrders: OrderHistoryEntry[] =
+    realOrders.length > 0 ? realOrders : sampleOrders;
+
+  const filteredOrders = allOrders.filter((o) =>
     o.id.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -219,6 +245,22 @@ export function HistoryPage() {
             {/* ORDERS */}
             {activeTab === "orders" && (
               <div data-ocid="history.orders.panel">
+                {realOrders.length > 0 && (
+                  <div
+                    style={{
+                      background: "rgba(34,197,94,0.08)",
+                      border: "1px solid rgba(34,197,94,0.25)",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      marginBottom: "10px",
+                      fontSize: "12px",
+                      color: "#22c55e",
+                    }}
+                  >
+                    ✅ {realOrders.length} real order
+                    {realOrders.length > 1 ? "s" : ""} placed
+                  </div>
+                )}
                 {filteredOrders.length === 0 ? (
                   <div
                     data-ocid="history.orders.empty_state"
@@ -264,6 +306,17 @@ export function HistoryPage() {
                         <p style={{ margin: 0, fontSize: "14px" }}>
                           {order.service}
                         </p>
+                        {order.quantity && (
+                          <p
+                            style={{
+                              margin: 0,
+                              fontSize: "12px",
+                              color: "#6b7280",
+                            }}
+                          >
+                            Qty: {Number(order.quantity).toLocaleString()}
+                          </p>
+                        )}
                         <div
                           style={{
                             display: "flex",
