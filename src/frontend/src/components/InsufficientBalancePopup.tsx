@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalBalance } from "../hooks/useLocalBalance";
 import { godWarnInsufficientBalance } from "./GodSpeakAI";
@@ -15,95 +14,58 @@ type PopupMessage = {
   id: string;
   border: string;
   icon: string;
-  content: React.ReactNode;
+  title: string;
+  subtitle: string;
+  subtitleColor: string;
+  body: string;
 };
 
-function PopupContent1() {
-  return (
-    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
-      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
-        Special Offer
-      </div>
-      <div style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 18 }}>
-        ₹250 + ₹60 Bonus
-      </div>
-      <div style={{ marginTop: 6, opacity: 0.9 }}>Pay ₹250 → Get ₹310</div>
-    </div>
-  );
-}
-
-function PopupContent2() {
-  return (
-    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
-      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
-        Blue Tick Offer
-      </div>
-      <img
-        src="/assets/uploads/20260321_003208-1.png"
-        width={50}
-        style={{
-          filter: "drop-shadow(0 0 10px #3b82f6)",
-          margin: "6px auto",
-          display: "block",
-        }}
-        alt="Blue Tick Badge"
-      />
-      <div style={{ color: "#3b82f6", fontWeight: "bold", fontSize: 18 }}>
-        ₹499 Only
-      </div>
-      <div style={{ marginTop: 6, opacity: 0.9 }}>Extra ₹141 Bonus 🔥</div>
-    </div>
-  );
-}
-
-function PopupContent3() {
-  return (
-    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
-      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
-        Low Balance
-      </div>
-      <div style={{ color: "#ff5a2c", fontWeight: "bold", fontSize: 18 }}>
-        आपका बैलेंस ₹0 है
-      </div>
-      <div style={{ marginTop: 6, opacity: 0.9 }}>पहले फंड ऐड करें</div>
-    </div>
-  );
-}
-
-function PopupContent4() {
-  return (
-    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
-      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
-        Recharge Now
-      </div>
-      <div style={{ color: "#22c55e", fontWeight: "bold", fontSize: 18 }}>
-        ₹150 से शुरू करें
-      </div>
-      <div style={{ marginTop: 6, opacity: 0.9 }}>+ Bonus पाएँ</div>
-    </div>
-  );
-}
-
-function PopupContent5() {
-  return (
-    <div style={{ fontSize: 15, lineHeight: 1.6, color: "white" }}>
-      <div style={{ fontSize: 20, marginBottom: 8, fontWeight: "bold" }}>
-        Most Popular Plan
-      </div>
-      <div style={{ color: "#a855f7", fontWeight: "bold", fontSize: 18 }}>
-        ₹250 सबसे ज्यादा खरीदा जाता है
-      </div>
-      <div style={{ marginTop: 6, opacity: 0.9 }}>⭐ Best Seller</div>
-    </div>
-  );
-}
-
 const POPUP_MESSAGES: PopupMessage[] = [
-  { id: "offer", border: "#f59e0b", icon: "🔥", content: <PopupContent1 /> },
-  { id: "bluetick", border: "#3b82f6", icon: "💎", content: <PopupContent2 /> },
-  { id: "lowbal", border: "#ff5a2c", icon: "⚠️", content: <PopupContent3 /> },
-  { id: "recharge", border: "#22c55e", icon: "💰", content: <PopupContent4 /> },
-  { id: "popular", border: "#a855f7", icon: "🎯", content: <PopupContent5 /> },
+  {
+    id: "offer",
+    border: "#f59e0b",
+    icon: "🔥",
+    title: "Special Offer",
+    subtitle: "₹250 + ₹60 Bonus",
+    subtitleColor: "#f59e0b",
+    body: "Pay ₹250 → Get ₹310",
+  },
+  {
+    id: "bluetick",
+    border: "#3b82f6",
+    icon: "💎",
+    title: "Blue Tick Offer",
+    subtitle: "₹499 Only",
+    subtitleColor: "#3b82f6",
+    body: "Extra ₹141 Bonus 🔥",
+  },
+  {
+    id: "lowbal",
+    border: "#ff5a2c",
+    icon: "⚠️",
+    title: "Low Balance",
+    subtitle: "आपका बैलेंस ₹0 है",
+    subtitleColor: "#ff5a2c",
+    body: "पहले फंड ऐड करें",
+  },
+  {
+    id: "recharge",
+    border: "#22c55e",
+    icon: "💰",
+    title: "Recharge Now",
+    subtitle: "₹150 से शुरू करें",
+    subtitleColor: "#22c55e",
+    body: "+ Bonus पाएँ",
+  },
+  {
+    id: "popular",
+    border: "#a855f7",
+    icon: "🎯",
+    title: "Most Popular Plan",
+    subtitle: "₹250 सबसे ज्यादा खरीदा जाता है",
+    subtitleColor: "#a855f7",
+    body: "⭐ Best Seller",
+  },
 ];
 
 function isOnBlueTickPage(): boolean {
@@ -140,6 +102,7 @@ export function InsufficientBalancePopup() {
     botTimerRef.current = setTimeout(() => setShowBot(false), 4000);
   }, []);
 
+  // Listen for external trigger (e.g. Buy button click)
   useEffect(() => {
     const handler = () => {
       if (isOnBlueTickPage()) return;
@@ -149,19 +112,31 @@ export function InsufficientBalancePopup() {
     return () => window.removeEventListener("show-balance-popup", handler);
   }, [showPopup]);
 
+  // Auto timer: 5s first, 15s second, 25s third, then every 15s
   useEffect(() => {
     if (firstTimerRef.current) clearTimeout(firstTimerRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     if (balance > 0) return;
 
-    firstTimerRef.current = setTimeout(() => {
-      showPopup();
-      intervalRef.current = setInterval(() => showPopup(), 10000);
-    }, 3000);
+    // 5s
+    const t1 = setTimeout(() => showPopup(true), 5000);
+    // 15s
+    const t2 = setTimeout(() => showPopup(true), 15000);
+    // 25s
+    const t3 = setTimeout(() => showPopup(true), 25000);
+    // every 15s after 25s
+    const loop = setTimeout(() => {
+      intervalRef.current = setInterval(() => showPopup(true), 15000);
+    }, 25000);
+
+    firstTimerRef.current = t1;
 
     return () => {
-      if (firstTimerRef.current) clearTimeout(firstTimerRef.current);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(loop);
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (botTimerRef.current) clearTimeout(botTimerRef.current);
     };
@@ -191,164 +166,209 @@ export function InsufficientBalancePopup() {
   return (
     <>
       {/* AI Bot notification */}
-      <AnimatePresence>
-        {showBot && (
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            style={{
-              position: "fixed",
-              bottom: 80,
-              left: 16,
-              zIndex: 9998,
-              background: "#222",
-              padding: "10px 15px",
-              borderRadius: 10,
-              color: "white",
-              fontSize: 13,
-              maxWidth: 260,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-            }}
-          >
-            🤖 Sir, your balance is ₹0. Add funds to continue.
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showBot && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 80,
+            left: 16,
+            zIndex: 100000,
+            background: "#222",
+            padding: "10px 15px",
+            borderRadius: 10,
+            color: "white",
+            fontSize: 13,
+            maxWidth: 260,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            animation: "slideInLeft 0.3s ease",
+          }}
+        >
+          🤖 Sir, your balance is ₹0. Add funds to continue.
+        </div>
+      )}
 
-      {/* Main sequence popup */}
-      <AnimatePresence>
-        {open && (
+      {/* Main overlay */}
+      {open && (
+        <div
+          onClick={handleClose}
+          onKeyDown={(e) => e.key === "Escape" && handleClose()}
+          role="presentation"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.82)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 99999,
+          }}
+        >
+          <style>{`
+            @keyframes popupZoom {
+              from { transform: scale(0.7); opacity: 0; }
+              to   { transform: scale(1);   opacity: 1; }
+            }
+            @keyframes slideInLeft {
+              from { opacity: 0; transform: translateX(-20px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+          `}</style>
+
+          {/* Popup box */}
           <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            aria-modal="true"
             style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              background: "rgba(0,0,0,0.82)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
+              width: "90%",
+              maxWidth: 400,
+              background: "#1c1c1c",
+              border: `3px solid ${current.border}`,
+              borderRadius: 20,
+              padding: 25,
+              textAlign: "center",
+              animation: "popupZoom 0.3s ease",
+              boxShadow: `0 0 40px ${current.border}55`,
             }}
-            onClick={handleClose}
-            onKeyDown={(e) => e.key === "Escape" && handleClose()}
-            tabIndex={-1}
           >
-            <motion.div
-              key={current.id}
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.7, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              onClick={(e) => e.stopPropagation()}
+            {/* Header */}
+            <div
               style={{
-                width: "90%",
-                maxWidth: 400,
-                background: "#1c1c1c",
-                border: `3px solid ${current.border}`,
-                borderRadius: 20,
-                padding: 25,
-                textAlign: "center",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 14,
               }}
             >
-              {/* Header row */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 14,
-                }}
-              >
-                <span style={{ fontSize: 26 }}>{current.icon}</span>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  data-ocid="balance_popup.close_button"
-                  style={{
-                    fontSize: 22,
-                    cursor: "pointer",
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    lineHeight: 1,
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Message content */}
-              <div style={{ marginBottom: 20 }}>{current.content}</div>
-
-              {/* Add Funds button */}
-              <button
-                type="button"
-                onClick={handleAddFunds}
-                data-ocid="balance_popup.primary_button"
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-                  border: "none",
-                  color: "white",
-                  borderRadius: 10,
-                  marginBottom: 10,
-                  cursor: "pointer",
-                  fontSize: 15,
-                  fontWeight: "bold",
-                }}
-              >
-                💳 Add Funds
-              </button>
-
-              {/* Close button */}
+              <span style={{ fontSize: 26 }}>{current.icon}</span>
               <button
                 type="button"
                 onClick={handleClose}
-                data-ocid="balance_popup.cancel_button"
                 style={{
-                  width: "100%",
-                  padding: "12px",
-                  background: "#333",
+                  fontSize: 22,
+                  cursor: "pointer",
+                  background: "none",
                   border: "none",
                   color: "white",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  fontSize: 15,
+                  lineHeight: 1,
+                  opacity: 0.7,
                 }}
               >
-                ❌ Close
+                ×
               </button>
+            </div>
 
-              {/* Sequence indicator dots */}
+            {/* Content */}
+            <div style={{ marginBottom: 20 }}>
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: 6,
-                  marginTop: 14,
+                  fontSize: 20,
+                  marginBottom: 8,
+                  fontWeight: "bold",
+                  color: "white",
                 }}
               >
-                {POPUP_MESSAGES.map((msg, i) => (
-                  <div
-                    key={msg.id}
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: i === popupIndex ? current.border : "#444",
-                      transition: "background 0.3s",
-                    }}
-                  />
-                ))}
+                {current.title}
               </div>
-            </motion.div>
+              {current.id === "bluetick" && (
+                <img
+                  src="/assets/uploads/20260321_003208-1.png"
+                  width={50}
+                  alt="Blue Tick"
+                  style={{
+                    filter: "drop-shadow(0 0 10px #3b82f6)",
+                    margin: "6px auto",
+                    display: "block",
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  color: current.subtitleColor,
+                  fontWeight: "bold",
+                  fontSize: 18,
+                }}
+              >
+                {current.subtitle}
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  opacity: 0.9,
+                  color: "white",
+                  fontSize: 14,
+                }}
+              >
+                {current.body}
+              </div>
+            </div>
+
+            {/* Add Funds button */}
+            <button
+              type="button"
+              onClick={handleAddFunds}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+                border: "none",
+                color: "white",
+                borderRadius: 10,
+                marginBottom: 10,
+                cursor: "pointer",
+                fontSize: 15,
+                fontWeight: "bold",
+              }}
+            >
+              💳 Add Funds
+            </button>
+
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={handleClose}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "#333",
+                border: "none",
+                color: "white",
+                borderRadius: 10,
+                cursor: "pointer",
+                fontSize: 15,
+              }}
+            >
+              ❌ Close
+            </button>
+
+            {/* Dots indicator */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 6,
+                marginTop: 14,
+              }}
+            >
+              {POPUP_MESSAGES.map((msg, i) => (
+                <div
+                  key={msg.id}
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: i === popupIndex ? current.border : "#444",
+                    transition: "background 0.3s",
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </>
   );
 }
