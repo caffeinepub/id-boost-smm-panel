@@ -6,15 +6,10 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { BottomNav } from "./components/BottomNav";
 import { GodSpeakAI } from "./components/GodSpeakAI";
 import { HelpChat } from "./components/HelpChat";
-import { InsufficientBalancePopup } from "./components/InsufficientBalancePopup";
-import { LiveOrderToast } from "./components/LiveOrderToast";
 import { LiveTicker } from "./components/LiveTicker";
-import { PurchasePopup } from "./components/PurchasePopup";
 import { TopBar } from "./components/TopBar";
 import { AppProvider } from "./context/AppContext";
 import { useLocalBalance, useSelectedAmount } from "./hooks/useLocalBalance";
@@ -30,42 +25,6 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { ReportPage } from "./pages/ReportPage";
 import { TermsPage } from "./pages/TermsPage";
 import { WalletPage } from "./pages/WalletPage";
-
-function OfferPopup() {
-  useEffect(() => {
-    if (sessionStorage.getItem("offer_shown")) return;
-    const timer = setTimeout(() => {
-      sessionStorage.setItem("offer_shown", "1");
-      toast(
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🔥</span>
-          <div>
-            <p className="font-black text-white text-sm">Special Offer!</p>
-            <p className="text-yellow-300 font-bold text-base">
-              ₹250 +₹60 Bonus
-            </p>
-            <p className="text-gray-300 text-xs mt-0.5">
-              Pay ₹250 → Get ₹310 in wallet
-            </p>
-          </div>
-        </div>,
-        {
-          duration: 6000,
-          style: {
-            background: "linear-gradient(135deg, #1e1b4b, #0f172a)",
-            border: "1px solid rgba(236,72,153,0.5)",
-            boxShadow: "0 0 24px rgba(236,72,153,0.3)",
-            color: "#fff",
-            borderRadius: "16px",
-            padding: "12px 16px",
-          },
-        },
-      );
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-  return null;
-}
 
 function RechargeBanner() {
   const balance = useLocalBalance();
@@ -214,11 +173,7 @@ export default function App() {
   return (
     <AppProvider>
       <GodSpeakAI />
-      <OfferPopup />
       <HelpChat />
-      <LiveOrderToast />
-      <PurchasePopup />
-      <InsufficientBalancePopup />
       <RouterProvider router={router} />
       <Toaster richColors position="top-right" />
     </AppProvider>

@@ -41,6 +41,23 @@ export function godSpeak(text: string) {
   window.speechSynthesis.speak(speech);
 }
 
+// ── speakOnce: 20s minimum gap between calls ──
+let aiSpokenLast = 0;
+export function speakOnce(text: string) {
+  if (!("speechSynthesis" in window)) return;
+  const now = Date.now();
+  if (now - aiSpokenLast < 20000) return;
+  aiSpokenLast = now;
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = "hi-IN";
+  msg.rate = 1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(msg);
+  setTimeout(() => {
+    aiSpokenLast = 0;
+  }, 20000);
+}
+
 export function GodSpeakAI() {
   const idleRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const idleTime = useRef(0);
