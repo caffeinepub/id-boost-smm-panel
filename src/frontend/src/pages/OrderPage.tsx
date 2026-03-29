@@ -27,12 +27,16 @@ type ServiceKey =
   | "fb_pagelikes"
   | "fb_views";
 
+// ratePerThousand = ₹ per 1000 units
+// pricePerUnit = ratePerThousand / 1000  (used for cost calculation)
 const INSTAGRAM_SERVICES: {
   key: ServiceKey;
   label: string;
   emoji: string;
   serviceId: bigint;
-  pricePerUnit: number;
+  ratePerThousand: number; // display rate
+  pricePerUnit: number; // = ratePerThousand / 1000
+  isPremium: boolean;
   minQty: number;
   maxQty: number;
 }[] = [
@@ -41,8 +45,10 @@ const INSTAGRAM_SERVICES: {
     label: "Followers",
     emoji: "👤",
     serviceId: BigInt(1),
-    pricePerUnit: 0.006,
-    minQty: 100,
+    ratePerThousand: 0.5,
+    pricePerUnit: 0.0005,
+    isPremium: true,
+    minQty: 1000,
     maxQty: 100000,
   },
   {
@@ -50,53 +56,65 @@ const INSTAGRAM_SERVICES: {
     label: "Likes",
     emoji: "❤️",
     serviceId: BigInt(2),
-    pricePerUnit: 0.004,
-    minQty: 100,
-    maxQty: 50000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "views",
     label: "Views",
     emoji: "👁️",
     serviceId: BigInt(3),
-    pricePerUnit: 0.002,
-    minQty: 500,
-    maxQty: 500000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "shares",
     label: "Shares",
     emoji: "🔄",
     serviceId: BigInt(4),
-    pricePerUnit: 0.005,
-    minQty: 100,
-    maxQty: 50000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "comments",
     label: "Comments",
     emoji: "💬",
     serviceId: BigInt(5),
-    pricePerUnit: 0.01,
-    minQty: 10,
-    maxQty: 10000,
+    ratePerThousand: 0.3,
+    pricePerUnit: 0.0003,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 50000,
   },
   {
     key: "story",
     label: "Story Views",
     emoji: "📲",
     serviceId: BigInt(6),
-    pricePerUnit: 0.004,
-    minQty: 100,
-    maxQty: 200000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "live",
     label: "Live Views",
     emoji: "🔴",
     serviceId: BigInt(7),
-    pricePerUnit: 0.003,
-    minQty: 100,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
     maxQty: 50000,
   },
 ];
@@ -106,7 +124,9 @@ const YOUTUBE_SERVICES: {
   label: string;
   emoji: string;
   serviceId: bigint;
+  ratePerThousand: number;
   pricePerUnit: number;
+  isPremium: boolean;
   minQty: number;
   maxQty: number;
 }[] = [
@@ -115,8 +135,10 @@ const YOUTUBE_SERVICES: {
     label: "Subscribers",
     emoji: "🔔",
     serviceId: BigInt(10),
-    pricePerUnit: 0.199,
-    minQty: 100,
+    ratePerThousand: 1.0,
+    pricePerUnit: 0.001,
+    isPremium: true,
+    minQty: 1000,
     maxQty: 100000,
   },
   {
@@ -124,27 +146,33 @@ const YOUTUBE_SERVICES: {
     label: "Views",
     emoji: "▶️",
     serviceId: BigInt(11),
-    pricePerUnit: 0.099,
-    minQty: 500,
-    maxQty: 500000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "yt_likes",
     label: "Likes",
     emoji: "👍",
     serviceId: BigInt(12),
-    pricePerUnit: 0.049,
-    minQty: 100,
-    maxQty: 50000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "yt_watchtime",
     label: "Watch Time",
     emoji: "⏱️",
     serviceId: BigInt(13),
-    pricePerUnit: 0.299,
-    minQty: 100,
-    maxQty: 10000,
+    ratePerThousand: 0.5,
+    pricePerUnit: 0.0005,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
 ];
 
@@ -153,7 +181,9 @@ const FACEBOOK_SERVICES: {
   label: string;
   emoji: string;
   serviceId: bigint;
+  ratePerThousand: number;
   pricePerUnit: number;
+  isPremium: boolean;
   minQty: number;
   maxQty: number;
 }[] = [
@@ -162,17 +192,21 @@ const FACEBOOK_SERVICES: {
     label: "Likes",
     emoji: "👍",
     serviceId: BigInt(20),
-    pricePerUnit: 0.049,
-    minQty: 100,
-    maxQty: 50000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "fb_followers",
     label: "Followers",
     emoji: "👥",
     serviceId: BigInt(21),
-    pricePerUnit: 0.099,
-    minQty: 100,
+    ratePerThousand: 0.5,
+    pricePerUnit: 0.0005,
+    isPremium: true,
+    minQty: 1000,
     maxQty: 100000,
   },
   {
@@ -180,18 +214,22 @@ const FACEBOOK_SERVICES: {
     label: "Page Likes",
     emoji: "📄",
     serviceId: BigInt(22),
-    pricePerUnit: 0.079,
-    minQty: 100,
-    maxQty: 50000,
+    ratePerThousand: 0.2,
+    pricePerUnit: 0.0002,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
   {
     key: "fb_views",
     label: "Views",
     emoji: "👁️",
     serviceId: BigInt(23),
-    pricePerUnit: 0.059,
-    minQty: 500,
-    maxQty: 200000,
+    ratePerThousand: 0.15,
+    pricePerUnit: 0.00015,
+    isPremium: false,
+    minQty: 1000,
+    maxQty: 100000,
   },
 ];
 
@@ -278,6 +316,12 @@ function formatDate(d: Date): string {
   });
 }
 
+// Auto-calculate price: (qty / 1000) * ratePerThousand
+function calcCost(qty: number, pricePerUnit: number): string {
+  if (!qty || qty <= 0) return "0.00";
+  return (qty * pricePerUnit).toFixed(2);
+}
+
 export function OrderPage() {
   const { userProfile, refetchProfile } = useAppContext();
   const placeOrder = usePlaceOrder();
@@ -308,17 +352,17 @@ export function OrderPage() {
     [activeService, services],
   );
 
+  // Auto-calculate on every quantity change
   const cost = useMemo(() => {
     const qty = Number(quantity);
-    if (!qty || qty <= 0) return "0.00";
-    return (qty * svc.pricePerUnit).toFixed(2);
+    return calcCost(qty, svc.pricePerUnit);
   }, [quantity, svc]);
 
   const balance = userProfile?.balance ?? getLocalBalance();
   const isInsufficient = balance < Number(cost) && Number(cost) > 0;
 
   const handleAiSuggest = () => {
-    const options = [1000, 5000, 10000];
+    const options = [1000, 5000, 10000, 25000, 50000];
     setQuantity(String(options[Math.floor(Math.random() * options.length)]));
   };
 
@@ -335,6 +379,11 @@ export function OrderPage() {
     setActiveService(key);
     setQuantity("1000");
     setCommentsText("");
+  };
+
+  const handleQuantityChange = (val: string) => {
+    // Allow typing freely; validation on submit
+    setQuantity(val);
   };
 
   const isLive = activeService === "live";
@@ -368,7 +417,9 @@ export function OrderPage() {
     }
     const qty = Number.parseInt(quantity);
     if (!qty || qty < svc.minQty || qty > svc.maxQty) {
-      toast.error(`Quantity must be between ${svc.minQty} and ${svc.maxQty}`);
+      toast.error(
+        `Quantity must be between ${svc.minQty.toLocaleString()} and ${svc.maxQty.toLocaleString()}`,
+      );
       return;
     }
     if (isInsufficient) {
@@ -382,10 +433,8 @@ export function OrderPage() {
         quantity: BigInt(qty),
       });
 
-      // Deduct balance from localStorage
       deductBalance(Number(cost));
 
-      // Save to order history
       saveOrderToHistory({
         id: `#${Date.now()}`,
         service: `${platformCfg.label} ${svc.label}`,
@@ -397,7 +446,6 @@ export function OrderPage() {
         date: formatDate(new Date()),
       });
 
-      // Show 3D success modal
       setSuccessModal({
         visible: true,
         service: `${platformCfg.label} ${svc.label}`,
@@ -496,6 +544,18 @@ export function OrderPage() {
             >
               <span className="text-xl leading-none">{s.emoji}</span>
               <span>{s.label}</span>
+              {/* Show rate badge */}
+              <span
+                className="text-[9px] mt-0.5 px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: s.isPremium
+                    ? "rgba(251,191,36,0.15)"
+                    : "rgba(34,197,94,0.12)",
+                  color: s.isPremium ? "#fbbf24" : "#4ade80",
+                }}
+              >
+                ₹{s.ratePerThousand}/1K
+              </span>
             </button>
           );
         })}
@@ -511,7 +571,7 @@ export function OrderPage() {
         data-ocid="order.card"
       >
         {/* Platform badge */}
-        <div className="flex items-center justify-center gap-2 mb-1">
+        <div className="flex items-center justify-between mb-1">
           <span
             className="text-[10px] font-bold px-2 py-0.5 rounded-full"
             style={{
@@ -522,10 +582,15 @@ export function OrderPage() {
           >
             {platformCfg.emoji} {platformCfg.label}
           </span>
+          {svc.isPremium && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+              ⭐ Premium
+            </span>
+          )}
         </div>
 
         <h2
-          className="text-center text-xl font-bold mb-5"
+          className="text-center text-xl font-bold mb-1"
           style={{
             fontFamily: "Bricolage Grotesque, sans-serif",
             color: accentText,
@@ -534,6 +599,14 @@ export function OrderPage() {
         >
           {isLive ? "🔴 LIVE VIEWS" : `${svc.emoji} ${svc.label.toUpperCase()}`}
         </h2>
+
+        {/* Rate line */}
+        <p className="text-center text-xs text-gray-500 mb-4">
+          ₹{svc.ratePerThousand.toFixed(2)} per 1,000 units
+          {svc.isPremium && (
+            <span className="ml-1 text-yellow-500/70">(Premium Rate)</span>
+          )}
+        </p>
 
         {/* Live Views notice */}
         <AnimatePresence>
@@ -590,7 +663,7 @@ export function OrderPage() {
           )}
         </AnimatePresence>
 
-        {/* Quantity */}
+        {/* Quantity input — auto-calculates price */}
         <span className="text-xs text-gray-400 mb-1 block">Quantity</span>
         <input
           type="number"
@@ -598,7 +671,8 @@ export function OrderPage() {
           value={quantity}
           min={svc.minQty}
           max={svc.maxQty}
-          onChange={(e) => setQuantity(e.target.value)}
+          step={1000}
+          onChange={(e) => handleQuantityChange(e.target.value)}
           data-ocid="order.input"
         />
         <div className="flex justify-between items-center mb-4">
@@ -617,24 +691,53 @@ export function OrderPage() {
           </button>
         </div>
 
-        {/* Price info */}
-        <div
-          className="rounded-lg p-3 mb-3 flex justify-between items-center"
+        {/* Dynamic price calculator */}
+        <motion.div
+          key={cost}
+          initial={{ scale: 0.97, opacity: 0.7 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.15 }}
+          className="rounded-xl p-4 mb-4"
           style={{
-            background: "rgba(0,0,0,0.35)",
-            border: `1px solid ${accentColor.replace("0.7", "0.2")}`,
+            background: "rgba(0,0,0,0.4)",
+            border: `1px solid ${accentColor.replace("0.7", "0.25")}`,
+            backdropFilter: "blur(10px)",
           }}
         >
-          <span className="text-gray-500 text-xs">
-            ₹{svc.pricePerUnit}/unit
-          </span>
-          <div className="text-right">
-            <div className="text-gray-400 text-xs">Total Charge</div>
-            <div className="font-bold text-2xl" style={{ color: accentText }}>
-              ₹{cost}
-            </div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs text-gray-500">Formula</span>
+            <span className="text-xs text-gray-400 font-mono">
+              ({Number(quantity).toLocaleString() || "0"} ÷ 1000) × ₹
+              {svc.ratePerThousand.toFixed(2)}
+            </span>
           </div>
-        </div>
+          <div className="flex justify-between items-center">
+            <span
+              className="text-sm font-semibold"
+              style={{ color: accentText }}
+            >
+              Total Charge
+            </span>
+            <motion.div
+              key={cost}
+              initial={{ y: -6, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="font-black text-3xl"
+              style={{
+                color: accentText,
+                textShadow: `0 0 16px ${accentGlow}`,
+              }}
+            >
+              ₹{cost}
+            </motion.div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-white/5 flex justify-between">
+            <span className="text-[10px] text-gray-600">Rate</span>
+            <span className="text-[10px] text-gray-500">
+              ₹{svc.ratePerThousand.toFixed(2)} / 1,000 units
+            </span>
+          </div>
+        </motion.div>
 
         {/* Insufficient balance */}
         <AnimatePresence>
@@ -684,7 +787,7 @@ export function OrderPage() {
           {placeOrder.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : null}
-          {isLive ? "🔴" : platformCfg.emoji} Buy {svc.label}
+          {isLive ? "🔴" : platformCfg.emoji} Buy {svc.label} — ₹{cost}
         </button>
       </motion.div>
 

@@ -1,10 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { RefundHistory } from "../components/RefundHistory";
 import { RefundModal } from "../components/RefundModal";
 import { useAppContext } from "../context/AppContext";
 import { useRefunds } from "../hooks/useRefunds";
+
+const UPI_ID = "mohd4143@ptyes";
+const UPI_NAME = "IDBOOST";
 
 const PLANS = [
   { amount: 75, bonus: 15, tag: "starter" as const },
@@ -24,57 +28,68 @@ export function WalletPage() {
   const navigate = useNavigate();
   const { hasPending } = useRefunds();
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [submitStatus, setSubmitStatus] = useState<
-    "idle" | "success" | "error_plan" | "error_screenshot"
-  >("idle");
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(PLANS[3]);
+  const [showUTR, setShowUTR] = useState(false);
+  const [utr, setUtr] = useState("");
+  const [utrSubmitted, setUtrSubmitted] = useState(false);
+  const [qrError, setQrError] = useState(false);
   const [refundModalOpen, setRefundModalOpen] = useState(false);
 
   const rechargeRef = useRef<HTMLDivElement>(null);
 
   function handleSelectPlan(plan: Plan) {
     setSelectedPlan(plan);
-    setSubmitStatus("idle");
+    setShowUTR(false);
+    setUtr("");
+    setUtrSubmitted(false);
   }
 
   function scrollToRecharge() {
     rechargeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function handleScreenshotChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setScreenshotFile(file);
-    setSubmitStatus("idle");
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`)}`;
+
+  function handlePayNow() {
+    window.location.href = `upi://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`;
+    setShowUTR(true);
   }
 
-  function handleSubmitPayment() {
-    if (!selectedPlan) {
-      setSubmitStatus("error_plan");
+  function handleUpiAppPay(app: "gpay" | "phonepe" | "paytm") {
+    const links: Record<string, string> = {
+      gpay: `tez://upi/pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`,
+      phonepe: `phonepe://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`,
+      paytm: `paytmmp://pay?pa=${UPI_ID}&pn=${UPI_NAME}&am=${selectedPlan.amount}&cu=INR`,
+    };
+    window.location.href = links[app];
+    setShowUTR(true);
+    toast("App se payment karo phir UTR darj karo", {
+      style: {
+        background: "linear-gradient(135deg, #1e293b, #0f172a)",
+        border: "1px solid rgba(59,130,246,0.5)",
+        color: "#fff",
+        borderRadius: "16px",
+      },
+    });
+  }
+
+  function handleVerifyUTR() {
+    if (utr.length < 10) {
+      alert(
+        "\u274C Invalid UPI Ref No. \u0915\u092E \u0938\u0947 \u0915\u092E 10 \u0905\u0915\u094D\u0937\u0930 \u0939\u094B\u0928\u0947 \u091A\u093E\u0939\u093F\u090F",
+      );
       return;
     }
-    if (!screenshotFile) {
-      setSubmitStatus("error_screenshot");
-      return;
-    }
-    const pending = JSON.parse(localStorage.getItem("pendingDeposits") || "[]");
+    const pending = JSON.parse(localStorage.getItem("pendingUTR") || "[]");
     pending.push({
+      utr,
       amount: selectedPlan.amount,
       bonus: selectedPlan.bonus,
-      timestamp: Date.now(),
-      status: "pending",
+      time: Date.now(),
     });
-    localStorage.setItem("pendingDeposits", JSON.stringify(pending));
-    setSubmitStatus("success");
-    setScreenshotFile(null);
+    localStorage.setItem("pendingUTR", JSON.stringify(pending));
+    setUtrSubmitted(true);
   }
-
-  const smallPlans = PLANS.filter(
-    (p) => p.tag === "starter" || p.tag === "popular_small",
-  );
-  const mainPlans = PLANS.filter(
-    (p) => p.tag !== "starter" && p.tag !== "popular_small",
-  );
 
   return (
     <main className="max-w-[430px] mx-auto px-3 py-4 pb-24">
@@ -127,7 +142,9 @@ export function WalletPage() {
           padding: "24px 20px 20px",
         }}
       >
+        {/* Shimmer overlay */}
         <div
+          className="vip-shimmer"
           style={{
             position: "absolute",
             inset: 0,
@@ -139,6 +156,8 @@ export function WalletPage() {
             borderRadius: "18px",
           }}
         />
+
+        {/* VIP Badge row */}
         <div className="flex items-center justify-between mb-4">
           <span
             style={{
@@ -157,6 +176,8 @@ export function WalletPage() {
             ◈
           </span>
         </div>
+
+        {/* Balance Amount */}
         <div className="text-center mb-4">
           <p
             style={{
@@ -184,6 +205,8 @@ export function WalletPage() {
             Available Balance
           </p>
         </div>
+
+        {/* Divider */}
         <div
           style={{
             height: "1px",
@@ -192,6 +215,8 @@ export function WalletPage() {
             marginBottom: "16px",
           }}
         />
+
+        {/* Quick Actions */}
         <div className="flex gap-3">
           <button
             type="button"
@@ -208,6 +233,14 @@ export function WalletPage() {
               fontWeight: 700,
               cursor: "pointer",
               transition: "all 0.18s",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "rgba(59,130,246,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "transparent";
             }}
           >
             + Add Funds
@@ -229,6 +262,15 @@ export function WalletPage() {
               cursor: hasPending ? "not-allowed" : "pointer",
               opacity: hasPending ? 0.6 : 1,
               transition: "all 0.18s",
+            }}
+            onMouseEnter={(e) => {
+              if (!hasPending)
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "rgba(148,163,184,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "transparent";
             }}
           >
             ↩ {hasPending ? "Pending" : "Request Refund"}
@@ -279,103 +321,72 @@ export function WalletPage() {
           Plan select karo aur pay karo
         </p>
 
-        {/* Recharge Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "10px",
-            marginBottom: "16px",
-          }}
-        >
-          {/* Full-width small plans */}
-          {smallPlans.map((plan) => {
-            const isSelected = selectedPlan?.amount === plan.amount;
-            const isPopSmall = plan.tag === "popular_small";
+        {/* Small Plans Row (₹75 + ₹100) */}
+        <div className="flex gap-3 mb-3">
+          {PLANS.filter(
+            (p) => p.tag === "starter" || p.tag === "popular_small",
+          ).map((plan) => {
+            const isSelected = selectedPlan.amount === plan.amount;
+            const isPopularSmall = plan.tag === "popular_small";
             return (
               <button
                 key={plan.amount}
                 type="button"
                 onClick={() => handleSelectPlan(plan)}
                 data-ocid="wallet.toggle"
+                className="relative flex-1 text-white text-sm font-bold transition-all duration-200 active:scale-90"
                 style={{
-                  gridColumn: "span 2",
-                  padding: "16px 18px",
-                  borderRadius: "15px",
-                  background: "#0f172a",
-                  border: isPopSmall
-                    ? `2px solid ${isSelected ? "#3b82f6" : "#3b82f6"}`
-                    : `1.5px solid ${isSelected ? "rgba(59,130,246,0.6)" : "rgba(59,130,246,0.2)"}`,
-                  boxShadow: isSelected
-                    ? "0 0 16px rgba(59,130,246,0.35)"
-                    : "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  transition: "all 0.2s",
-                  color: "white",
+                  background: "#020617",
+                  padding: "12px 10px",
+                  borderRadius: "12px",
+                  border: isPopularSmall
+                    ? isSelected
+                      ? "2px solid #2563eb"
+                      : "2px solid #2563eb"
+                    : isSelected
+                      ? "2px solid rgba(59,130,246,0.5)"
+                      : "1.5px solid rgba(59,130,246,0.3)",
+                  boxShadow: isPopularSmall
+                    ? isSelected
+                      ? "0 0 18px rgba(37,99,235,0.5)"
+                      : "0 0 18px rgba(37,99,235,0.5)"
+                    : isSelected
+                      ? "0 0 12px rgba(59,130,246,0.3)"
+                      : "0 0 12px rgba(59,130,246,0.2)",
+                  textAlign: "center" as const,
                 }}
               >
-                <div style={{ textAlign: "left" }}>
-                  {isPopSmall && (
-                    <span
-                      style={{
-                        background: "#2563eb",
-                        color: "#fff",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: "20px",
-                        display: "inline-block",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Popular
-                    </span>
-                  )}
-                  {!isPopSmall && (
-                    <span
-                      style={{
-                        background: "#64748b",
-                        color: "#fff",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: "20px",
-                        display: "inline-block",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Starter
-                    </span>
-                  )}
-                  <p style={{ fontSize: "20px", fontWeight: 800, margin: 0 }}>
-                    ₹{plan.amount}
-                  </p>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p
-                    style={{
-                      color: "#22c55e",
-                      fontWeight: 700,
-                      fontSize: "15px",
-                      margin: 0,
-                    }}
-                  >
-                    +₹{plan.bonus} Bonus
-                  </p>
-                  <p style={{ color: "#6b7280", fontSize: "12px", margin: 0 }}>
-                    Total ₹{plan.amount + plan.bonus}
-                  </p>
-                </div>
+                <span
+                  className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-white"
+                  style={{
+                    background: isPopularSmall ? "#2563eb" : "#64748b",
+                    fontSize: "9px",
+                    whiteSpace: "nowrap" as const,
+                    fontWeight: 700,
+                  }}
+                >
+                  {isPopularSmall ? "Popular" : "Starter"}
+                </span>
+                <span className="block text-base font-black">
+                  ₹{plan.amount}
+                </span>
+                <span
+                  className="block text-green-400"
+                  style={{ fontSize: "11px" }}
+                >
+                  +₹{plan.bonus} Bonus
+                </span>
               </button>
             );
           })}
+        </div>
 
-          {/* 2-column main plans */}
-          {mainPlans.map((plan) => {
-            const isSelected = selectedPlan?.amount === plan.amount;
+        {/* Main Plan Buttons */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {PLANS.filter(
+            (p) => p.tag !== "starter" && p.tag !== "popular_small",
+          ).map((plan) => {
+            const isSelected = selectedPlan.amount === plan.amount;
             const isPopular = plan.tag === "popular";
             const isBest = plan.tag === "best";
             return (
@@ -384,40 +395,43 @@ export function WalletPage() {
                 type="button"
                 onClick={() => handleSelectPlan(plan)}
                 data-ocid="wallet.toggle"
+                className="relative text-white text-sm font-bold transition-all duration-200 active:scale-90"
                 style={{
-                  padding: "16px 10px",
-                  borderRadius: "15px",
                   background: isSelected
-                    ? "linear-gradient(145deg, #1e40af20, #0f172a)"
-                    : "#0f172a",
+                    ? "linear-gradient(145deg, #1e40af, #1e3a5f)"
+                    : "linear-gradient(145deg, #1e293b, #0f172a)",
+                  padding: "10px 14px",
+                  borderRadius: "15px",
                   border: isPopular
-                    ? `2px solid ${isSelected ? "#6366f1" : "#6366f1"}`
+                    ? "2px solid #3b82f6"
                     : isBest
-                      ? `2px solid ${isSelected ? "#22c55e" : "#22c55e"}`
-                      : `1.5px solid ${isSelected ? "rgba(59,130,246,0.5)" : "rgba(59,130,246,0.15)"}`,
+                      ? "2px solid #22c55e"
+                      : isSelected
+                        ? "2px solid rgba(59,130,246,0.5)"
+                        : "2px solid transparent",
                   boxShadow: isSelected
-                    ? "0 0 16px rgba(59,130,246,0.25)"
-                    : "none",
-                  cursor: "pointer",
+                    ? "5px 5px 15px #000, -5px -5px 15px #1f2937, 0 0 20px rgba(59,130,246,0.4)"
+                    : "5px 5px 15px #000, -5px -5px 15px #1f2937",
+                  minWidth: "80px",
                   textAlign: "center",
-                  transition: "all 0.2s",
-                  color: "white",
-                  position: "relative",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                    "0 0 20px #3b82f6, 0 0 40px #9333ea";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                    isSelected
+                      ? "5px 5px 15px #000, -5px -5px 15px #1f2937, 0 0 20px rgba(59,130,246,0.4)"
+                      : "5px 5px 15px #000, -5px -5px 15px #1f2937";
                 }}
               >
                 {isPopular && (
                   <span
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 rounded"
                     style={{
-                      position: "absolute",
-                      top: "-10px",
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      background: "#6366f1",
-                      color: "#fff",
+                      background: "#3b82f6",
                       fontSize: "9px",
-                      fontWeight: 700,
-                      padding: "2px 7px",
-                      borderRadius: "20px",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -426,209 +440,177 @@ export function WalletPage() {
                 )}
                 {isBest && (
                   <span
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 rounded"
                     style={{
-                      position: "absolute",
-                      top: "-10px",
-                      left: "50%",
-                      transform: "translateX(-50%)",
                       background: "#22c55e",
-                      color: "#fff",
                       fontSize: "9px",
-                      fontWeight: 700,
-                      padding: "2px 7px",
-                      borderRadius: "20px",
                       whiteSpace: "nowrap",
                     }}
                   >
                     🔥 Best
                   </span>
                 )}
-                <p
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: 800,
-                    margin: "0 0 2px",
-                  }}
-                >
-                  ₹{plan.amount}
-                </p>
-                <p
-                  style={{
-                    color: "#22c55e",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    margin: 0,
-                  }}
+                <span className="block">₹{plan.amount}</span>
+                <span
+                  className="block text-green-400"
+                  style={{ fontSize: "11px" }}
                 >
                   +₹{plan.bonus}
-                </p>
+                </span>
               </button>
             );
           })}
         </div>
 
-        {/* Selected Plan + Offer text */}
-        {selectedPlan && (
-          <motion.div
-            key={selectedPlan.amount}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center text-sm font-bold mb-4 py-2 px-3 rounded-xl"
+        {/* Offer Text */}
+        <motion.div
+          key={selectedPlan.amount}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center text-sm font-bold mb-4 py-2 px-3 rounded-xl"
+          style={{
+            background: "rgba(34,197,94,0.1)",
+            border: "1px solid rgba(34,197,94,0.3)",
+            color: "#86efac",
+          }}
+        >
+          You Pay ₹{selectedPlan.amount} → You Get ₹
+          {selectedPlan.amount + selectedPlan.bonus}
+        </motion.div>
+
+        {/* QR Code */}
+        <div className="text-center mb-4">
+          <img
+            src={qrError ? "/assets/uploads/Image-1-1.jpg" : qrUrl}
+            alt="UPI QR Code"
+            width={180}
+            height={180}
+            className="mx-auto rounded-xl"
+            style={{ border: "1px solid rgba(59,130,246,0.3)" }}
+            onError={() => setQrError(true)}
+          />
+          <p className="text-xs text-gray-400 mt-2">
+            Scan & Pay ₹{selectedPlan.amount} • UPI: {UPI_ID}
+          </p>
+        </div>
+
+        {/* UPI App Buttons */}
+        <div className="flex gap-2 mb-3">
+          <button
+            type="button"
+            onClick={() => handleUpiAppPay("gpay")}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
             style={{
-              background: "rgba(34,197,94,0.1)",
-              border: "1px solid rgba(34,197,94,0.3)",
-              color: "#86efac",
+              background: "#0f9d58",
+              boxShadow: "0 0 14px rgba(15,157,88,0.45)",
+              border: "none",
             }}
+            data-ocid="wallet.primary_button"
           >
-            Selected: ₹{selectedPlan.amount} → You Get ₹
-            {selectedPlan.amount + selectedPlan.bonus}
+            🟢 GPay
+          </button>
+          <button
+            type="button"
+            onClick={() => handleUpiAppPay("phonepe")}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: "#5f259f",
+              boxShadow: "0 0 14px rgba(95,37,159,0.45)",
+              border: "none",
+            }}
+            data-ocid="wallet.primary_button"
+          >
+            🟣 PhonePe
+          </button>
+          <button
+            type="button"
+            onClick={() => handleUpiAppPay("paytm")}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: "#002970",
+              boxShadow: "0 0 14px rgba(0,41,112,0.45)",
+              border: "1px solid rgba(59,130,246,0.3)",
+            }}
+            data-ocid="wallet.primary_button"
+          >
+            🟡 Paytm
+          </button>
+        </div>
+
+        {/* Pay Now Button */}
+        <button
+          type="button"
+          onClick={handlePayNow}
+          data-ocid="wallet.primary_button"
+          className="w-full font-black text-white text-base py-3 rounded-xl transition-all duration-150 active:scale-95 mb-3"
+          style={{
+            background: "linear-gradient(45deg, #3b82f6, #ec4899)",
+            boxShadow: "0 0 20px rgba(59,130,246,0.4)",
+            border: "none",
+          }}
+        >
+          ⚡ Pay Now (GPay / PhonePe / Paytm)
+        </button>
+
+        {/* UTR Input */}
+        {showUTR && !utrSubmitted && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2"
+          >
+            <p className="text-xs text-yellow-400 mb-2 text-center">
+              ⏳ Payment ke baad UPI Ref No / UTR Number darj karein
+            </p>
+            <input
+              type="text"
+              value={utr}
+              onChange={(e) => setUtr(e.target.value)}
+              placeholder="Enter UPI Ref No / UTR Number"
+              data-ocid="wallet.input"
+              className="w-full px-4 py-2 rounded-xl text-white text-sm mb-2 outline-none"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(59,130,246,0.4)",
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleVerifyUTR}
+              data-ocid="wallet.submit_button"
+              className="w-full py-2 rounded-xl font-bold text-sm transition-all active:scale-95"
+              style={{
+                background: "linear-gradient(45deg, #22c55e, #16a34a)",
+                boxShadow: "0 0 15px rgba(34,197,94,0.3)",
+                border: "none",
+                color: "white",
+              }}
+            >
+              ✅ Verify Payment
+            </button>
           </motion.div>
         )}
 
-        {/* Screenshot Upload Section */}
-        <div
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(59,130,246,0.2)",
-            borderRadius: "12px",
-            padding: "16px",
-            marginBottom: "4px",
-          }}
-        >
-          <p
+        {/* UTR Submitted */}
+        {utrSubmitted && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-3 rounded-xl mt-2"
             style={{
-              color: "#94a3b8",
-              fontSize: "13px",
-              marginBottom: "10px",
-              fontWeight: 600,
+              background: "rgba(34,197,94,0.1)",
+              border: "1px solid rgba(34,197,94,0.3)",
             }}
+            data-ocid="wallet.success_state"
           >
-            📸 Upload Payment Screenshot
-          </p>
-
-          <label
-            htmlFor="screenshot-upload"
-            style={{
-              display: "block",
-              padding: "12px",
-              borderRadius: "10px",
-              border: "1.5px dashed rgba(59,130,246,0.4)",
-              background: "rgba(59,130,246,0.05)",
-              color: screenshotFile ? "#22c55e" : "#64748b",
-              fontSize: "13px",
-              textAlign: "center",
-              cursor: "pointer",
-              marginBottom: "12px",
-              transition: "all 0.2s",
-            }}
-            data-ocid="wallet.upload_button"
-          >
-            {screenshotFile
-              ? `✅ ${screenshotFile.name}`
-              : "📁 Tap to select screenshot"}
-          </label>
-          <input
-            id="screenshot-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleScreenshotChange}
-            style={{ display: "none" }}
-            data-ocid="wallet.dropzone"
-          />
-
-          {/* Inline error messages */}
-          {submitStatus === "error_plan" && (
-            <p
-              style={{
-                color: "#f87171",
-                fontSize: "12px",
-                marginBottom: "8px",
-              }}
-            >
-              ❌ Please select a plan first
+            <p className="text-green-400 font-bold text-sm">
+              ✅ Verification Pending
             </p>
-          )}
-          {submitStatus === "error_screenshot" && (
-            <p
-              style={{
-                color: "#f87171",
-                fontSize: "12px",
-                marginBottom: "8px",
-              }}
-            >
-              ❌ Please upload screenshot
+            <p className="text-gray-400 text-xs mt-1">
+              Admin review karega, phir balance add hoga
             </p>
-          )}
-
-          <button
-            type="button"
-            onClick={handleSubmitPayment}
-            data-ocid="wallet.submit_button"
-            style={{
-              width: "100%",
-              padding: "12px",
-              borderRadius: "10px",
-              background: "linear-gradient(45deg, #2563eb, #7c3aed)",
-              border: "none",
-              color: "white",
-              fontSize: "14px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-          >
-            ✅ Submit Payment
-          </button>
-
-          {/* Success State */}
-          {submitStatus === "success" && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={{
-                marginTop: "12px",
-                padding: "12px",
-                borderRadius: "10px",
-                background: "rgba(34,197,94,0.1)",
-                border: "1px solid rgba(34,197,94,0.3)",
-                textAlign: "center",
-              }}
-              data-ocid="wallet.success_state"
-            >
-              <p
-                style={{ color: "#22c55e", fontWeight: 700, fontSize: "13px" }}
-              >
-                ✅ Payment submitted successfully!
-              </p>
-              <p
-                style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px" }}
-              >
-                Admin will verify and credit your balance.
-              </p>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Balance display */}
-        <div
-          style={{
-            marginTop: "12px",
-            padding: "10px 14px",
-            borderRadius: "10px",
-            background: "rgba(34,197,94,0.06)",
-            border: "1px solid rgba(34,197,94,0.15)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ color: "#6b7280", fontSize: "13px" }}>
-            Current Balance
-          </span>
-          <span style={{ color: "#22c55e", fontWeight: 800, fontSize: "16px" }}>
-            ₹{balance}
-          </span>
-        </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Analytics quick links */}
