@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { triggerInsufficientBalancePopup } from "../components/InsufficientBalancePopup";
 import { OrderLoader } from "../components/OrderLoader";
@@ -343,6 +343,26 @@ export function OrderPage() {
     quantity: "",
     amount: "",
   });
+
+  // Auto-select service from localStorage (set by HomePage card click)
+  useEffect(() => {
+    const raw = localStorage.getItem("selectedService");
+    if (!raw) return;
+    try {
+      const sel = JSON.parse(raw) as { platform: string; key: string };
+      localStorage.removeItem("selectedService");
+      const platforms = ["instagram", "youtube", "facebook"];
+      if (platforms.includes(sel.platform)) {
+        setActivePlatform(sel.platform as Platform);
+        const firstSvc = PLATFORM_CONFIG[sel.platform as Platform].services[0];
+        const matchedKey =
+          PLATFORM_CONFIG[sel.platform as Platform].services.find(
+            (s) => s.key === sel.key,
+          )?.key ?? firstSvc.key;
+        setActiveService(matchedKey as ServiceKey);
+      }
+    } catch {}
+  }, []);
 
   const platformCfg = PLATFORM_CONFIG[activePlatform];
   const services = platformCfg.services;
