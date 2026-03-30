@@ -13,7 +13,6 @@ const NAV_ITEMS = [
   { icon: "📦", label: "Orders", path: "/orders-history" },
   { icon: "💰", label: "Add Funds", path: "/wallet" },
   { icon: "👤", label: "Profile", path: "/profile" },
-  { icon: "👑", label: "Admin", path: "/admin" },
 ];
 
 export function SideDrawer({ isOpen, onClose, onOpenRefund }: SideDrawerProps) {

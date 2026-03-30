@@ -1,1035 +1,1116 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Navigate } from "@tanstack/react-router";
-import {
-  CheckCircle,
-  CreditCard,
-  Edit,
-  ListOrdered,
-  Loader2,
-  Plus,
-  Settings,
-  Shield,
-  Trash2,
-  Users,
-} from "lucide-react";
-import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { OrderStatus, type Service } from "../backend";
-import { useAppContext } from "../context/AppContext";
 import {
-  useAddService,
   useAdjustBalance,
   useAllOrders,
   useAllPaymentRequests,
   useAllUsers,
   useApprovePayment,
-  useRemoveService,
-  useServices,
-  useUpdateService,
 } from "../hooks/useQueries";
-import {
-  type RefundRequest,
-  type RefundStatus,
-  useRefunds,
-} from "../hooks/useRefunds";
 
-type BlueTickOrder = {
-  id: number;
-  username: string;
-  submittedAt: string;
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface AdminAuth {
+  authenticated: boolean;
+  expiry: number;
+}
+
+interface LocalDeposit {
+  id: string;
+  amount: number;
+  bonus?: number;
+  time: string;
+  status: "pending" | "approved" | "rejected";
+  screenshot?: string;
+}
+
+interface LocalOrder {
+  id: string;
+  userId?: string;
+  service: string;
+  quantity: number;
+  price: number;
   status: string;
-};
+  date?: string;
+}
 
-function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const map: Record<OrderStatus, { label: string; className: string }> = {
-    [OrderStatus.pending]: {
-      label: "Pending",
-      className: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-    },
-    [OrderStatus.processing]: {
-      label: "Processing",
-      className: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-    },
-    [OrderStatus.completed]: {
-      label: "Completed",
-      className: "bg-green-500/20 text-green-400 border-green-500/30",
-    },
-    [OrderStatus.failed]: {
-      label: "Failed",
-      className: "bg-red-500/20 text-red-400 border-red-500/30",
-    },
+type AdminTab = "dashboard" | "users" | "payments" | "orders";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function getAdminAuth(): AdminAuth | null {
+  try {
+    const raw = localStorage.getItem("adminAuth");
+    if (!raw) return null;
+    const parsed: AdminAuth = JSON.parse(raw);
+    if (!parsed.authenticated || Date.now() > parsed.expiry) {
+      localStorage.removeItem("adminAuth");
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function setAdminAuth() {
+  const auth: AdminAuth = {
+    authenticated: true,
+    expiry: Date.now() + 86400000,
   };
-  const { label, className } = map[status] || map[OrderStatus.pending];
+  localStorage.setItem("adminAuth", JSON.stringify(auth));
+}
+
+function getLocalDeposits(): LocalDeposit[] {
+  try {
+    return JSON.parse(localStorage.getItem("pendingDeposits") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDeposits(deposits: LocalDeposit[]) {
+  localStorage.setItem("pendingDeposits", JSON.stringify(deposits));
+}
+
+function getLocalOrders(): LocalOrder[] {
+  try {
+    return JSON.parse(localStorage.getItem("localOrders") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function addToLocalBalance(amount: number) {
+  const cur = Number.parseFloat(localStorage.getItem("localBalance") || "0");
+  localStorage.setItem("localBalance", String(cur + amount));
+}
+
+// ── Login Screen ─────────────────────────────────────────────────────────────
+
+function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (username === "admin" && password === "idboost@2024") {
+      setAdminAuth();
+      onSuccess();
+    } else {
+      setError("Invalid credentials");
+    }
+  }
+
   return (
-    <Badge variant="outline" className={className}>
-      {label}
-    </Badge>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#020617",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        fontFamily: "sans-serif",
+      }}
+    >
+      <div
+        style={{
+          background: "rgba(15,23,42,0.9)",
+          border: "1px solid rgba(56,189,248,0.2)",
+          borderRadius: "16px",
+          padding: "40px",
+          maxWidth: "400px",
+          width: "100%",
+          textAlign: "center",
+        }}
+        data-ocid="admin.modal"
+      >
+        <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
+        <h1
+          style={{
+            color: "#f1f5f9",
+            fontSize: "24px",
+            fontWeight: 700,
+            margin: "0 0 6px",
+          }}
+        >
+          Admin Login
+        </h1>
+        <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "28px" }}>
+          Authorized Access Only
+        </p>
+
+        <form
+          onSubmit={handleLogin}
+          style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+        >
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            data-ocid="admin.input"
+            style={inputStyle}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            data-ocid="admin.input"
+            style={inputStyle}
+          />
+
+          {error && (
+            <p
+              style={{ color: "#f87171", fontSize: "13px", margin: 0 }}
+              data-ocid="admin.error_state"
+            >
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            data-ocid="admin.submit_button"
+            style={{
+              padding: "12px",
+              borderRadius: "10px",
+              border: "none",
+              background: "linear-gradient(135deg,#2563eb,#4f46e5)",
+              color: "white",
+              fontSize: "15px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "opacity 0.2s",
+            }}
+          >
+            Access Panel
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
-export function AdminPage() {
-  const { isAdmin, isLoading } = useAppContext();
+const inputStyle: React.CSSProperties = {
+  padding: "12px 14px",
+  borderRadius: "10px",
+  border: "1px solid #1e293b",
+  background: "#0f172a",
+  color: "#f1f5f9",
+  fontSize: "14px",
+  outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
+};
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2
-          className="w-8 h-8 animate-spin"
-          style={{ color: "#00d4ff" }}
-        />
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: { icon: string; label: string; value: number | string; color: string }) {
+  return (
+    <div
+      style={{
+        background: "rgba(15,23,42,0.8)",
+        border: `1px solid ${color}33`,
+        borderRadius: "12px",
+        padding: "20px",
+        textAlign: "center",
+        flex: "1",
+        minWidth: "120px",
+      }}
+      data-ocid="admin.card"
+    >
+      <div style={{ fontSize: "28px", marginBottom: "8px" }}>{icon}</div>
+      <div style={{ color: color, fontSize: "26px", fontWeight: 700 }}>
+        {value}
       </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/" />;
-  }
-
-  return <AdminContent />;
+      <div style={{ color: "#64748b", fontSize: "12px", marginTop: "4px" }}>
+        {label}
+      </div>
+    </div>
+  );
 }
 
-function AdminContent() {
-  const { data: users, isLoading: usersLoading } = useAllUsers();
-  const { data: orders, isLoading: ordersLoading } = useAllOrders();
-  const [blueTickOrders, setBlueTickOrders] = useState<BlueTickOrder[]>([]);
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("blueTickOrders") || "[]");
-    setBlueTickOrders(stored);
-  }, []);
+// ── Main AdminPage ────────────────────────────────────────────────────────────
 
-  type PendingUTR = {
-    id: number;
-    utr: string;
-    amount: number;
-    bonus: number;
-    time: string;
-    status: string;
-  };
-  const [pendingUTRList, setPendingUTRList] = useState<PendingUTR[]>([]);
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("pendingUTR") || "[]");
-    setPendingUTRList(stored);
-  }, []);
-  const handleUTRApprove = (id: number) => {
-    const updated = pendingUTRList.map((o) =>
-      o.id === id ? { ...o, status: "approved" } : o,
-    );
-    const item = pendingUTRList.find((o) => o.id === id);
-    if (item) {
-      // Credit balance + bonus to localStorage
-      const KEY = "localBalance";
-      const cur = Number.parseFloat(localStorage.getItem(KEY) || "0");
-      localStorage.setItem(KEY, String(cur + item.amount + item.bonus));
-    }
-    setPendingUTRList(updated);
-    localStorage.setItem("pendingUTR", JSON.stringify(updated));
-    toast.success("Payment approved! Balance + bonus credited.");
-  };
-  const handleUTRReject = (id: number) => {
-    const updated = pendingUTRList.map((o) =>
-      o.id === id ? { ...o, status: "rejected" } : o,
-    );
-    setPendingUTRList(updated);
-    localStorage.setItem("pendingUTR", JSON.stringify(updated));
-    toast.error("Payment rejected.");
-  };
-  const handleBlueTickApprove = (id: number) => {
-    const updated = blueTickOrders.map((o) =>
-      o.id === id ? { ...o, status: "approved" } : o,
-    );
-    setBlueTickOrders(updated);
-    localStorage.setItem("blueTickOrders", JSON.stringify(updated));
-    toast.success("Blue Tick approved!");
-  };
-  const handleBlueTickReject = (id: number) => {
-    const updated = blueTickOrders.map((o) =>
-      o.id === id ? { ...o, status: "rejected" } : o,
-    );
-    setBlueTickOrders(updated);
-    localStorage.setItem("blueTickOrders", JSON.stringify(updated));
-    toast.error("Blue Tick rejected.");
-  };
-  const { data: payments, isLoading: paymentsLoading } =
-    useAllPaymentRequests();
-  const { data: services, isLoading: servicesLoading } = useServices();
-
-  const approvePayment = useApprovePayment();
-  const adjustBalance = useAdjustBalance();
-  const addService = useAddService();
-  const removeService = useRemoveService();
-  const updateService = useUpdateService();
-
+export function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => !!getAdminAuth(),
+  );
+  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [localDeposits, setLocalDeposits] = useState<LocalDeposit[]>([]);
+  const [localOrders] = useState<LocalOrder[]>(() => getLocalOrders());
   const [adjustAmounts, setAdjustAmounts] = useState<Record<string, string>>(
     {},
   );
-  const [newSvc, setNewSvc] = useState({
-    name: "",
-    externalServiceId: "",
-    pricePerThousand: "",
-    minQty: "",
-    maxQty: "",
-  });
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editSvc, setEditSvc] = useState({
-    name: "",
-    externalServiceId: "",
-    pricePerThousand: "",
-    minQty: "",
-    maxQty: "",
-    active: true,
-  });
 
-  const handleAdjust = async (userId: any, userKey: string) => {
-    const amt = Number.parseFloat(adjustAmounts[userKey]);
-    if (Number.isNaN(amt)) {
-      toast.error("Enter a valid amount");
-      return;
-    }
-    try {
-      await adjustBalance.mutateAsync({ userId, amount: amt });
-      toast.success(`Balance adjusted by ₹${amt}`);
-      setAdjustAmounts((prev) => ({ ...prev, [userKey]: "" }));
-    } catch {
-      toast.error("Failed to adjust balance");
-    }
-  };
+  const allUsers = useAllUsers();
+  const allOrders = useAllOrders();
+  const allPayments = useAllPaymentRequests();
+  const approvePayment = useApprovePayment();
+  const adjustBalance = useAdjustBalance();
 
-  const handleApprove = async (paymentId: bigint) => {
-    try {
-      await approvePayment.mutateAsync(paymentId);
-      toast.success("Payment approved");
-    } catch {
-      toast.error("Failed to approve payment");
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocalDeposits(getLocalDeposits());
     }
-  };
+  }, [isAuthenticated]);
 
-  const handleAddService = async () => {
-    if (!newSvc.name || !newSvc.externalServiceId || !newSvc.pricePerThousand) {
-      toast.error("Fill all required fields");
-      return;
-    }
-    try {
-      await addService.mutateAsync({
-        name: newSvc.name,
-        externalServiceId: newSvc.externalServiceId,
-        pricePerThousand: Number.parseFloat(newSvc.pricePerThousand),
-        minQty: BigInt(newSvc.minQty || "100"),
-        maxQty: BigInt(newSvc.maxQty || "100000"),
-      });
-      toast.success("Service added");
-      setNewSvc({
-        name: "",
-        externalServiceId: "",
-        pricePerThousand: "",
-        minQty: "",
-        maxQty: "",
-      });
-    } catch {
-      toast.error("Failed to add service");
-    }
-  };
+  if (!isAuthenticated) {
+    return <LoginScreen onSuccess={() => setIsAuthenticated(true)} />;
+  }
 
-  const handleRemoveService = async (id: bigint) => {
-    try {
-      await removeService.mutateAsync(id);
-      toast.success("Service removed");
-    } catch {
-      toast.error("Failed to remove service");
-    }
-  };
+  const pendingDepositsCount = localDeposits.filter(
+    (d) => d.status === "pending",
+  ).length;
+  const pendingPaymentsCount =
+    (allPayments.data?.filter((p) => !p.approved).length ?? 0) +
+    pendingDepositsCount;
 
-  const startEdit = (svc: Service) => {
-    setEditingService(svc);
-    setEditSvc({
-      name: svc.name,
-      externalServiceId: svc.externalServiceId,
-      pricePerThousand: svc.pricePerThousand.toString(),
-      minQty: svc.minQty.toString(),
-      maxQty: svc.maxQty.toString(),
-      active: svc.active,
+  function handleLogout() {
+    localStorage.removeItem("adminAuth");
+    setIsAuthenticated(false);
+  }
+
+  function approveLocalDeposit(id: string) {
+    const updated = localDeposits.map((d) => {
+      if (d.id === id) {
+        addToLocalBalance(d.amount + (d.bonus ?? 0));
+        return { ...d, status: "approved" as const };
+      }
+      return d;
     });
-  };
+    saveLocalDeposits(updated);
+    setLocalDeposits(updated);
+  }
 
-  const handleUpdateService = async () => {
-    if (!editingService) return;
-    try {
-      await updateService.mutateAsync({
-        id: editingService.id,
-        name: editSvc.name,
-        externalServiceId: editSvc.externalServiceId,
-        pricePerThousand: Number.parseFloat(editSvc.pricePerThousand),
-        minQty: BigInt(editSvc.minQty),
-        maxQty: BigInt(editSvc.maxQty),
-        active: editSvc.active,
-      });
-      toast.success("Service updated");
-      setEditingService(null);
-    } catch {
-      toast.error("Failed to update service");
-    }
-  };
+  function rejectLocalDeposit(id: string) {
+    const updated = localDeposits.map((d) =>
+      d.id === id ? { ...d, status: "rejected" as const } : d,
+    );
+    saveLocalDeposits(updated);
+    setLocalDeposits(updated);
+  }
 
-  const serviceFormFields = [
-    { key: "name", label: "Name", placeholder: "e.g. Instagram Followers" },
-    {
-      key: "externalServiceId",
-      label: "External Service ID",
-      placeholder: "SMM API service ID",
-    },
-    {
-      key: "pricePerThousand",
-      label: "Price per 1000 (₹)",
-      placeholder: "e.g. 0.99",
-    },
-    { key: "minQty", label: "Min Quantity", placeholder: "e.g. 100" },
-    { key: "maxQty", label: "Max Quantity", placeholder: "e.g. 100000" },
+  const TABS: { id: AdminTab; icon: string; label: string }[] = [
+    { id: "dashboard", icon: "📊", label: "Dashboard" },
+    { id: "users", icon: "👥", label: "Users" },
+    { id: "payments", icon: "💳", label: "Payments" },
+    { id: "orders", icon: "📦", label: "Orders" },
   ];
 
   return (
-    <main className="min-h-screen pt-20 pb-16 px-4">
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#020617",
+        color: "#e2e8f0",
+        fontFamily: "sans-serif",
+        display: "flex",
+      }}
+    >
+      {/* Sidebar */}
+      <aside
+        style={{
+          width: "220px",
+          background: "#0f172a",
+          borderRight: "1px solid rgba(56,189,248,0.12)",
+          display: "flex",
+          flexDirection: "column",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          height: "100vh",
+          zIndex: 100,
+        }}
+        className="hidden md:flex"
+        data-ocid="admin.panel"
+      >
+        {/* Logo */}
+        <div
+          style={{
+            padding: "24px 20px 16px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
         >
-          <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8" style={{ color: "#00d4ff" }} />
-            <h1 className="font-display font-black text-3xl lg:text-4xl gradient-text">
-              Admin Panel
-            </h1>
-          </div>
-          <p className="text-muted-foreground mt-1">
-            Manage users, orders, payments, and services
-          </p>
-        </motion.div>
-
-        <Tabs defaultValue="users" data-ocid="admin.tab">
-          <TabsList className="bg-muted grid grid-cols-7 mb-6 w-full max-w-2xl">
-            <TabsTrigger value="users" data-ocid="admin.tab">
-              <Users className="w-4 h-4 mr-1" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="orders" data-ocid="admin.tab">
-              <ListOrdered className="w-4 h-4 mr-1" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="payments" data-ocid="admin.tab">
-              <CreditCard className="w-4 h-4 mr-1" />
-              Payments
-            </TabsTrigger>
-            <TabsTrigger value="services" data-ocid="admin.tab">
-              <Settings className="w-4 h-4 mr-1" />
-              Services
-            </TabsTrigger>
-            <TabsTrigger value="bluetick" data-ocid="admin.tab">
-              💎 Blue Tick
-            </TabsTrigger>
-            <TabsTrigger value="utrdeposits" data-ocid="admin.tab">
-              💰 UTR
-            </TabsTrigger>
-            <TabsTrigger value="refunds" data-ocid="admin.tab">
-              ↩ Refunds
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <div className="card-glass rounded-xl p-6" data-ocid="users.table">
-              <h2 className="font-bold text-lg mb-4">All Users</h2>
-              {usersLoading ? (
-                <div className="space-y-2" data-ocid="users.loading_state">
-                  {["u1", "u2", "u3"].map((k) => (
-                    <Skeleton key={k} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border">
-                        <TableHead>User ID</TableHead>
-                        <TableHead>Balance</TableHead>
-                        <TableHead>Adjust Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(users ?? []).map((user, idx) => {
-                        const userKey = user.userId.toString();
-                        const shortId = `${userKey.slice(0, 8)}...${userKey.slice(-4)}`;
-                        return (
-                          <TableRow
-                            key={userKey}
-                            className="border-border hover:bg-muted/50"
-                            data-ocid={`users.row.${idx + 1}`}
-                          >
-                            <TableCell className="font-mono text-xs">
-                              {shortId}
-                            </TableCell>
-                            <TableCell className="font-bold gradient-text">
-                              ₹{user.balance.toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Amount"
-                                  className="w-28 h-8 text-xs bg-muted border-border"
-                                  value={adjustAmounts[userKey] ?? ""}
-                                  onChange={(e) =>
-                                    setAdjustAmounts((prev) => ({
-                                      ...prev,
-                                      [userKey]: e.target.value,
-                                    }))
-                                  }
-                                  data-ocid="users.input"
-                                />
-                                <Button
-                                  size="sm"
-                                  className="btn-gradient text-white border-0 h-8"
-                                  onClick={() =>
-                                    handleAdjust(user.userId, userKey)
-                                  }
-                                  disabled={adjustBalance.isPending}
-                                  data-ocid={`users.save_button.${idx + 1}`}
-                                >
-                                  Apply
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                  {(users ?? []).length === 0 && (
-                    <div
-                      className="text-center py-8 text-muted-foreground"
-                      data-ocid="users.empty_state"
-                    >
-                      No users found
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders">
-            <div className="card-glass rounded-xl p-6" data-ocid="orders.table">
-              <h2 className="font-bold text-lg mb-4">All Orders</h2>
-              {ordersLoading ? (
-                <div className="space-y-2" data-ocid="orders.loading_state">
-                  {["o1", "o2", "o3"].map((k) => (
-                    <Skeleton key={k} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border">
-                        <TableHead>User</TableHead>
-                        <TableHead>Service</TableHead>
-                        <TableHead>Link</TableHead>
-                        <TableHead>Qty</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(orders ?? []).map((order, idx) => {
-                        const svc = services?.find(
-                          (s) => s.id === order.serviceId,
-                        );
-                        const date = new Date(
-                          Number(order.createdAt) / 1_000_000,
-                        ).toLocaleDateString();
-                        const userShort = `${order.userId.toString().slice(0, 8)}...`;
-                        return (
-                          <TableRow
-                            key={order.id.toString()}
-                            className="border-border hover:bg-muted/50"
-                            data-ocid={`orders.row.${idx + 1}`}
-                          >
-                            <TableCell className="font-mono text-xs">
-                              {userShort}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {svc?.name ?? `#${order.serviceId}`}
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                              {order.link}
-                            </TableCell>
-                            <TableCell>{order.quantity.toString()}</TableCell>
-                            <TableCell>
-                              <OrderStatusBadge status={order.status} />
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {date}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                  {(orders ?? []).length === 0 && (
-                    <div
-                      className="text-center py-8 text-muted-foreground"
-                      data-ocid="orders.empty_state"
-                    >
-                      No orders found
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Payments Tab */}
-          <TabsContent value="payments">
-            <div className="card-glass rounded-xl p-6">
-              <h2 className="font-bold text-lg mb-4">Payment Requests</h2>
-              {paymentsLoading ? (
-                <div className="space-y-2" data-ocid="payments.loading_state">
-                  {["p1", "p2", "p3"].map((k) => (
-                    <Skeleton key={k} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border">
-                        <TableHead>User</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Transaction ID</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(payments ?? []).map((p, idx) => (
-                        <TableRow
-                          key={p.id.toString()}
-                          className="border-border hover:bg-muted/50"
-                          data-ocid={`payments.row.${idx + 1}`}
-                        >
-                          <TableCell className="font-mono text-xs">{`${p.userId.toString().slice(0, 8)}...`}</TableCell>
-                          <TableCell className="font-bold gradient-text">
-                            ₹{p.amount}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{p.paymentMethod}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {p.transactionId}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                p.approved
-                                  ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                  : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                              }
-                            >
-                              {p.approved ? "Approved" : "Pending"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {!p.approved && (
-                              <Button
-                                size="sm"
-                                className="btn-gradient text-white border-0 h-8"
-                                onClick={() => handleApprove(p.id)}
-                                disabled={approvePayment.isPending}
-                                data-ocid={`payments.confirm_button.${idx + 1}`}
-                              >
-                                <CheckCircle className="w-3 h-3 mr-1" /> Approve
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {(payments ?? []).length === 0 && (
-                    <div
-                      className="text-center py-8 text-muted-foreground"
-                      data-ocid="payments.empty_state"
-                    >
-                      No payment requests
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Services Tab */}
-          <TabsContent value="services">
-            <div className="space-y-6">
-              <div className="card-glass rounded-xl p-6">
-                <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                  {editingService ? (
-                    <Edit className="w-4 h-4" style={{ color: "#8b5cf6" }} />
-                  ) : (
-                    <Plus className="w-4 h-4" style={{ color: "#00d4ff" }} />
-                  )}
-                  {editingService ? "Edit Service" : "Add New Service"}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {serviceFormFields.map(({ key, label, placeholder }) => (
-                    <div key={key}>
-                      <Label className="text-sm text-muted-foreground mb-1 block">
-                        {label}
-                      </Label>
-                      <Input
-                        placeholder={placeholder}
-                        value={
-                          editingService
-                            ? (editSvc as any)[key]
-                            : (newSvc as any)[key]
-                        }
-                        onChange={(e) => {
-                          if (editingService)
-                            setEditSvc((prev) => ({
-                              ...prev,
-                              [key]: e.target.value,
-                            }));
-                          else
-                            setNewSvc((prev) => ({
-                              ...prev,
-                              [key]: e.target.value,
-                            }));
-                        }}
-                        className="bg-muted border-border"
-                        data-ocid="services.input"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-3 mt-4">
-                  <Button
-                    className="btn-gradient text-white border-0"
-                    onClick={
-                      editingService ? handleUpdateService : handleAddService
-                    }
-                    disabled={addService.isPending || updateService.isPending}
-                    data-ocid="services.submit_button"
-                  >
-                    {addService.isPending || updateService.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    {editingService ? "Update Service" : "Add Service"}
-                  </Button>
-                  {editingService && (
-                    <Button
-                      variant="outline"
-                      className="border-border"
-                      onClick={() => setEditingService(null)}
-                      data-ocid="services.cancel_button"
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </div>
-
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "22px" }}>🚀</span>
+            <div>
               <div
-                className="card-glass rounded-xl p-6"
-                data-ocid="services.table"
+                style={{ fontWeight: 700, fontSize: "15px", color: "#38bdf8" }}
               >
-                <h2 className="font-bold text-lg mb-4">All Services</h2>
-                {servicesLoading ? (
-                  <div className="space-y-2" data-ocid="services.loading_state">
-                    {["s1", "s2", "s3"].map((k) => (
-                      <Skeleton key={k} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-border">
-                          <TableHead>Name</TableHead>
-                          <TableHead>External ID</TableHead>
-                          <TableHead>Price/1000</TableHead>
-                          <TableHead>Min/Max</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(services ?? []).map((svc, idx) => (
-                          <TableRow
-                            key={svc.id.toString()}
-                            className="border-border hover:bg-muted/50"
-                            data-ocid={`services.row.${idx + 1}`}
-                          >
-                            <TableCell className="font-medium">
-                              {svc.name}
-                            </TableCell>
-                            <TableCell className="font-mono text-xs text-muted-foreground">
-                              {svc.externalServiceId}
-                            </TableCell>
-                            <TableCell className="gradient-text font-bold">
-                              ₹{svc.pricePerThousand}
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {svc.minQty.toString()} / {svc.maxQty.toString()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  svc.active
-                                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                    : "bg-red-500/20 text-red-400 border-red-500/30"
-                                }
-                              >
-                                {svc.active ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 border-border"
-                                  onClick={() => startEdit(svc)}
-                                  data-ocid={`services.edit_button.${idx + 1}`}
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                                  onClick={() => handleRemoveService(svc.id)}
-                                  disabled={removeService.isPending}
-                                  data-ocid={`services.delete_button.${idx + 1}`}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    {(services ?? []).length === 0 && (
-                      <div
-                        className="text-center py-8 text-muted-foreground"
-                        data-ocid="services.empty_state"
-                      >
-                        No services yet
-                      </div>
-                    )}
-                  </div>
-                )}
+                ID BOOST
+              </div>
+              <div style={{ fontSize: "11px", color: "#475569" }}>
+                Admin Panel
               </div>
             </div>
-          </TabsContent>
-          {/* Blue Tick Orders Tab */}
-          <TabsContent value="bluetick">
-            <div className="card-glass rounded-xl p-6">
-              <h2 className="font-bold text-lg mb-4">💎 Blue Tick Orders</h2>
-              {blueTickOrders.length === 0 ? (
-                <div
-                  className="text-center py-8 text-muted-foreground"
-                  data-ocid="bluetick_orders.empty_state"
-                >
-                  No Blue Tick submissions yet
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border">
-                        <TableHead>Instagram Username</TableHead>
-                        <TableHead>Submitted At</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {blueTickOrders.map((order, idx) => (
-                        <TableRow
-                          key={order.id}
-                          className="border-border hover:bg-muted/50"
-                          data-ocid={`bluetick_orders.row.${idx + 1}`}
-                        >
-                          <TableCell className="font-mono text-sm font-bold">
-                            @{order.username}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {new Date(order.submittedAt).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                order.status === "approved"
-                                  ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                  : order.status === "rejected"
-                                    ? "bg-red-500/20 text-red-400 border-red-500/30"
-                                    : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                              }
-                            >
-                              {order.status === "approved"
-                                ? "✅ Approved"
-                                : order.status === "rejected"
-                                  ? "❌ Rejected"
-                                  : "⏳ Pending"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {order.status === "pending" && (
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  className="btn-gradient text-white border-0 h-8"
-                                  onClick={() =>
-                                    handleBlueTickApprove(order.id)
-                                  }
-                                  data-ocid={`bluetick_orders.approve_button.${idx + 1}`}
-                                >
-                                  <CheckCircle className="w-3 h-3 mr-1" />{" "}
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="h-8"
-                                  onClick={() => handleBlueTickReject(order.id)}
-                                  data-ocid={`bluetick_orders.reject_button.${idx + 1}`}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          {/* UTR Deposits Tab */}
-          <TabsContent value="utrdeposits">
-            <div className="card-glass rounded-xl p-6">
-              <h2 className="font-bold text-lg mb-4">
-                💰 UTR Deposit Requests
-              </h2>
-              {pendingUTRList.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No UTR submissions yet
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border">
-                        <TableHead>UTR / Ref No</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Bonus</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingUTRList.map((item, idx) => (
-                        <TableRow
-                          key={item.id}
-                          className="border-border hover:bg-muted/50"
-                        >
-                          <TableCell className="font-mono text-sm font-bold">
-                            {item.utr}
-                          </TableCell>
-                          <TableCell className="text-green-400 font-bold">
-                            ₹{item.amount}
-                          </TableCell>
-                          <TableCell className="text-yellow-400">
-                            +₹{item.bonus}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {item.time}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                item.status === "approved"
-                                  ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                  : item.status === "rejected"
-                                    ? "bg-red-500/20 text-red-400 border-red-500/30"
-                                    : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                              }
-                            >
-                              {item.status === "approved"
-                                ? "✅ Approved"
-                                : item.status === "rejected"
-                                  ? "❌ Rejected"
-                                  : "⏳ Pending"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {item.status === "pending" && (
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  className="btn-gradient text-white border-0 h-8"
-                                  onClick={() => handleUTRApprove(item.id)}
-                                  data-ocid={`utr_deposits.approve_button.${idx + 1}`}
-                                >
-                                  <CheckCircle className="w-3 h-3 mr-1" />{" "}
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="h-8"
-                                  onClick={() => handleUTRReject(item.id)}
-                                  data-ocid={`utr_deposits.reject_button.${idx + 1}`}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          <TabsContent value="refunds">
-            <RefundsAdminTab />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav
+          style={{
+            flex: 1,
+            padding: "12px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+          }}
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              data-ocid={`admin.${tab.id}.tab`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "none",
+                background:
+                  activeTab === tab.id
+                    ? "rgba(56,189,248,0.12)"
+                    : "transparent",
+                color: activeTab === tab.id ? "#38bdf8" : "#94a3b8",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: activeTab === tab.id ? 600 : 400,
+                borderLeft:
+                  activeTab === tab.id
+                    ? "3px solid #38bdf8"
+                    : "3px solid transparent",
+                transition: "all 0.15s",
+                textAlign: "left",
+                width: "100%",
+              }}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div
+          style={{
+            padding: "12px 10px",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleLogout}
+            data-ocid="admin.delete_button"
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid rgba(248,113,113,0.3)",
+              background: "transparent",
+              color: "#f87171",
+              fontSize: "13px",
+              cursor: "pointer",
+            }}
+          >
+            🚪 Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile top tabs */}
+      <div
+        className="md:hidden"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          background: "#0f172a",
+          borderBottom: "1px solid rgba(56,189,248,0.12)",
+          display: "flex",
+          gap: "4px",
+          padding: "8px",
+          overflowX: "auto",
+        }}
+      >
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            data-ocid={`admin.${tab.id}.tab`}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "none",
+              background:
+                activeTab === tab.id ? "rgba(56,189,248,0.15)" : "transparent",
+              color: activeTab === tab.id ? "#38bdf8" : "#64748b",
+              fontSize: "12px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              fontWeight: activeTab === tab.id ? 600 : 400,
+            }}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={handleLogout}
+          data-ocid="admin.delete_button"
+          style={{
+            marginLeft: "auto",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "none",
+            background: "transparent",
+            color: "#f87171",
+            fontSize: "12px",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          🚪 Logout
+        </button>
       </div>
-    </main>
+
+      {/* Main Content */}
+      <main
+        style={{
+          flex: 1,
+          marginLeft: "0",
+          padding: "20px",
+          overflowY: "auto",
+        }}
+        className="md:ml-[220px] mt-[60px] md:mt-0"
+      >
+        {/* ── Dashboard ── */}
+        {activeTab === "dashboard" && (
+          <div data-ocid="admin.dashboard.section">
+            <h2
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                marginBottom: "20px",
+                color: "#f1f5f9",
+              }}
+            >
+              📊 Dashboard
+            </h2>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                marginBottom: "24px",
+              }}
+            >
+              <StatCard
+                icon="👥"
+                label="Total Users"
+                value={
+                  allUsers.isLoading ? "..." : (allUsers.data?.length ?? 0)
+                }
+                color="#38bdf8"
+              />
+              <StatCard
+                icon="📦"
+                label="Total Orders"
+                value={
+                  allOrders.isLoading
+                    ? "..."
+                    : (allOrders.data?.length ?? 0) + localOrders.length
+                }
+                color="#a78bfa"
+              />
+              <StatCard
+                icon="⏳"
+                label="Pending Payments"
+                value={pendingPaymentsCount}
+                color="#fb923c"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Payments ── */}
+        {activeTab === "payments" && (
+          <div data-ocid="admin.payments.section">
+            <h2
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                marginBottom: "20px",
+                color: "#f1f5f9",
+              }}
+            >
+              💳 Payment Requests
+            </h2>
+
+            {/* Backend payments */}
+            {allPayments.isLoading && (
+              <p
+                style={{ color: "#64748b" }}
+                data-ocid="admin.payments.loading_state"
+              >
+                Loading payments...
+              </p>
+            )}
+            {allPayments.data && allPayments.data.length > 0 && (
+              <div style={{ marginBottom: "24px" }}>
+                <h3
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: "13px",
+                    marginBottom: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Backend Payments
+                </h3>
+                {allPayments.data.map((payment, idx) => (
+                  <div
+                    key={String(payment.id)}
+                    style={cardStyle}
+                    data-ocid={`admin.payments.item.${idx + 1}`}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                          ₹{Number(payment.amount)}
+                        </div>
+                        <div style={{ color: "#64748b", fontSize: "12px" }}>
+                          UTR: {payment.transactionId}
+                        </div>
+                        <div style={{ color: "#64748b", fontSize: "12px" }}>
+                          Method: {String(payment.paymentMethod)}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          alignItems: "center",
+                        }}
+                      >
+                        {payment.approved ? (
+                          <span style={badgeStyle("#22c55e")}>✅ Approved</span>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => approvePayment.mutate(payment.id)}
+                              data-ocid="admin.payments.confirm_button"
+                              style={actionBtn("#22c55e")}
+                            >
+                              ✅ Approve
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Local screenshot deposits */}
+            <h3
+              style={{
+                color: "#94a3b8",
+                fontSize: "13px",
+                marginBottom: "12px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Screenshot Deposits
+            </h3>
+            {localDeposits.length === 0 && (
+              <div
+                style={{ ...cardStyle, color: "#475569", textAlign: "center" }}
+                data-ocid="admin.payments.empty_state"
+              >
+                No deposit requests yet.
+              </div>
+            )}
+            {localDeposits.map((dep, idx) => (
+              <div
+                key={dep.id}
+                style={cardStyle}
+                data-ocid={`admin.payments.item.${idx + 1}`}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  {dep.screenshot && (
+                    <img
+                      src={dep.screenshot}
+                      alt="Payment screenshot"
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        border: "1px solid #1e293b",
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                      ₹{dep.amount}
+                      {dep.bonus ? ` + ₹${dep.bonus} bonus` : ""}
+                    </div>
+                    <div style={{ color: "#64748b", fontSize: "12px" }}>
+                      Time: {dep.time}
+                    </div>
+                    <div style={{ marginTop: "8px" }}>
+                      <span
+                        style={badgeStyle(
+                          dep.status === "approved"
+                            ? "#22c55e"
+                            : dep.status === "rejected"
+                              ? "#f87171"
+                              : "#fb923c",
+                        )}
+                      >
+                        {dep.status === "approved"
+                          ? "✅ Approved"
+                          : dep.status === "rejected"
+                            ? "❌ Rejected"
+                            : "⏳ Pending"}
+                      </span>
+                    </div>
+                  </div>
+                  {dep.status === "pending" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => approveLocalDeposit(dep.id)}
+                        data-ocid="admin.payments.confirm_button"
+                        style={actionBtn("#22c55e")}
+                      >
+                        ✅ Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => rejectLocalDeposit(dep.id)}
+                        data-ocid="admin.payments.delete_button"
+                        style={actionBtn("#f87171")}
+                      >
+                        ❌ Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Orders ── */}
+        {activeTab === "orders" && (
+          <div data-ocid="admin.orders.section">
+            <h2
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                marginBottom: "20px",
+                color: "#f1f5f9",
+              }}
+            >
+              📦 Orders
+            </h2>
+
+            {allOrders.isLoading && (
+              <p
+                style={{ color: "#64748b" }}
+                data-ocid="admin.orders.loading_state"
+              >
+                Loading orders...
+              </p>
+            )}
+
+            {/* Backend orders */}
+            {allOrders.data && allOrders.data.length > 0 && (
+              <div style={{ overflowX: "auto", marginBottom: "24px" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "13px",
+                  }}
+                  data-ocid="admin.orders.table"
+                >
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #1e293b" }}>
+                      {["User ID", "Service", "Quantity", "Status"].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: "10px 12px",
+                            textAlign: "left",
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allOrders.data.map((order, idx) => (
+                      <tr
+                        key={String(order.id)}
+                        style={{ borderBottom: "1px solid #0f172a" }}
+                        data-ocid={`admin.orders.row.${idx + 1}`}
+                      >
+                        <td style={tdStyle}>
+                          {String(order.userId).slice(0, 12)}...
+                        </td>
+                        <td style={tdStyle}>{String(order.serviceId)}</td>
+                        <td style={tdStyle}>{String(order.quantity)}</td>
+                        <td style={tdStyle}>
+                          <span
+                            style={badgeStyle(
+                              order.status === "pending"
+                                ? "#fb923c"
+                                : "#22c55e",
+                            )}
+                          >
+                            {String(order.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Local orders */}
+            {localOrders.length > 0 && (
+              <div>
+                <h3
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: "13px",
+                    marginBottom: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Local Orders
+                </h3>
+                <div style={{ overflowX: "auto" }}>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: "13px",
+                    }}
+                    data-ocid="admin.orders.table"
+                  >
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #1e293b" }}>
+                        {["ID", "Service", "Qty", "Price", "Status"].map(
+                          (h) => (
+                            <th
+                              key={h}
+                              style={{
+                                padding: "10px 12px",
+                                textAlign: "left",
+                                color: "#64748b",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {h}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {localOrders.map((order, idx) => (
+                        <tr
+                          key={order.id}
+                          style={{ borderBottom: "1px solid #0f172a" }}
+                          data-ocid={`admin.orders.row.${idx + 1}`}
+                        >
+                          <td style={tdStyle}>{order.id}</td>
+                          <td style={tdStyle}>{order.service}</td>
+                          <td style={tdStyle}>
+                            {order.quantity.toLocaleString()}
+                          </td>
+                          <td style={tdStyle}>₹{order.price.toFixed(2)}</td>
+                          <td style={tdStyle}>
+                            <span
+                              style={badgeStyle(
+                                order.status === "Pending"
+                                  ? "#fb923c"
+                                  : order.status === "Completed"
+                                    ? "#22c55e"
+                                    : "#94a3b8",
+                              )}
+                            >
+                              {order.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {(!allOrders.data || allOrders.data.length === 0) &&
+              localOrders.length === 0 &&
+              !allOrders.isLoading && (
+                <div
+                  style={{
+                    ...cardStyle,
+                    color: "#475569",
+                    textAlign: "center",
+                  }}
+                  data-ocid="admin.orders.empty_state"
+                >
+                  No orders found.
+                </div>
+              )}
+          </div>
+        )}
+
+        {/* ── Users ── */}
+        {activeTab === "users" && (
+          <div data-ocid="admin.users.section">
+            <h2
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                marginBottom: "20px",
+                color: "#f1f5f9",
+              }}
+            >
+              👥 Users
+            </h2>
+
+            {allUsers.isLoading && (
+              <p
+                style={{ color: "#64748b" }}
+                data-ocid="admin.users.loading_state"
+              >
+                Loading users...
+              </p>
+            )}
+
+            {allUsers.data &&
+              allUsers.data.length === 0 &&
+              !allUsers.isLoading && (
+                <div
+                  style={{
+                    ...cardStyle,
+                    color: "#475569",
+                    textAlign: "center",
+                  }}
+                  data-ocid="admin.users.empty_state"
+                >
+                  No users found.
+                </div>
+              )}
+
+            {allUsers.data?.map((user, idx) => {
+              const uid = String(user.userId);
+              const amount = adjustAmounts[uid] ?? "";
+              return (
+                <div
+                  key={uid}
+                  style={cardStyle}
+                  data-ocid={`admin.users.item.${idx + 1}`}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: "13px",
+                          color: "#94a3b8",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        {uid.length > 20 ? `${uid.slice(0, 20)}...` : uid}
+                      </div>
+                      <div
+                        style={{
+                          color: "#22c55e",
+                          fontWeight: 700,
+                          fontSize: "16px",
+                          marginTop: "4px",
+                        }}
+                      >
+                        ₹{Number(user.balance).toFixed(2)}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <input
+                        type="number"
+                        placeholder="Amount"
+                        value={amount}
+                        onChange={(e) =>
+                          setAdjustAmounts((prev) => ({
+                            ...prev,
+                            [uid]: e.target.value,
+                          }))
+                        }
+                        data-ocid="admin.users.input"
+                        style={{
+                          ...inputStyle,
+                          width: "100px",
+                          padding: "8px 10px",
+                          fontSize: "13px",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = Number.parseFloat(amount);
+                          if (!Number.isNaN(val) && val > 0) {
+                            adjustBalance.mutate({
+                              userId: user.userId,
+                              amount: val,
+                            });
+                            setAdjustAmounts((prev) => ({
+                              ...prev,
+                              [uid]: "",
+                            }));
+                          }
+                        }}
+                        data-ocid="admin.users.confirm_button"
+                        style={actionBtn("#22c55e")}
+                      >
+                        + Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = Number.parseFloat(amount);
+                          if (!Number.isNaN(val) && val > 0) {
+                            adjustBalance.mutate({
+                              userId: user.userId,
+                              amount: -val,
+                            });
+                            setAdjustAmounts((prev) => ({
+                              ...prev,
+                              [uid]: "",
+                            }));
+                          }
+                        }}
+                        data-ocid="admin.users.delete_button"
+                        style={actionBtn("#f87171")}
+                      >
+                        − Deduct
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
 
-function RefundsAdminTab() {
-  const { refunds, updateStatus } = useRefunds();
+// ── Shared mini-styles ────────────────────────────────────────────────────────
 
-  return (
-    <div className="card-glass rounded-xl p-6" data-ocid="refunds.table">
-      <h2 className="font-bold text-lg mb-4">Refund Requests</h2>
-      {refunds.length === 0 ? (
-        <div className="text-center py-8" data-ocid="refunds.empty_state">
-          <p className="text-muted-foreground text-sm">
-            No refund requests yet.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border">
-                <TableHead>ID</TableHead>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {refunds.map((r: RefundRequest, idx: number) => (
-                <TableRow
-                  key={r.id}
-                  className="border-border"
-                  data-ocid={`refunds.row.${idx + 1}`}
-                >
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {r.id.slice(0, 16)}…
-                  </TableCell>
-                  <TableCell className="font-medium">{r.fullName}</TableCell>
-                  <TableCell>₹{r.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    {r.method === "upi" ? "UPI" : "Bank Transfer"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        r.status === "approved"
-                          ? "bg-green-500/20 text-green-400 border-green-500/30"
-                          : r.status === "rejected"
-                            ? "bg-red-500/20 text-red-400 border-red-500/30"
-                            : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                      }
-                    >
-                      {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {new Date(r.createdAt).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {r.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white border-0 h-8"
-                          onClick={() =>
-                            updateStatus(r.id, "approved" as RefundStatus)
-                          }
-                          data-ocid={`refunds.confirm_button.${idx + 1}`}
-                        >
-                          <CheckCircle className="w-3 h-3 mr-1" /> Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-8"
-                          onClick={() =>
-                            updateStatus(r.id, "rejected" as RefundStatus)
-                          }
-                          data-ocid={`refunds.delete_button.${idx + 1}`}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
+const cardStyle: React.CSSProperties = {
+  background: "rgba(15,23,42,0.8)",
+  border: "1px solid #1e293b",
+  borderRadius: "12px",
+  padding: "16px",
+  marginBottom: "10px",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "10px 12px",
+  color: "#cbd5e1",
+  borderBottom: "1px solid #0f172a",
+};
+
+function badgeStyle(color: string): React.CSSProperties {
+  return {
+    display: "inline-block",
+    padding: "3px 10px",
+    borderRadius: "20px",
+    fontSize: "11px",
+    fontWeight: 600,
+    background: `${color}22`,
+    color: color,
+    border: `1px solid ${color}44`,
+  };
+}
+
+function actionBtn(color: string): React.CSSProperties {
+  return {
+    padding: "8px 14px",
+    borderRadius: "8px",
+    border: `1px solid ${color}44`,
+    background: `${color}18`,
+    color: color,
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+  };
 }

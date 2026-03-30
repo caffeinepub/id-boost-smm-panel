@@ -1,48 +1,48 @@
-# ID BOOST SMM Panel
+# ID BOOST SMM Panel — Admin Panel Security
 
 ## Current State
-HomePage currently shows:
-- A service tabs row (Followers / Likes / Views)
-- A full order form card: service dropdown, Instagram link input, quantity input, total charge box, T&C checkbox, Buy button
-- Blue Tick promo card
-- Quick Recharge section with plan buttons, QR code, UPI app buttons, UTR verification
-- Quick Box grid (Orders, Wallet, Boost, Analytics, Blue Tick)
-- Stats grid
-- Features list
+- `/admin` route exists and shows AdminPage
+- AdminPage checks `isAdmin` from IC context (backend role)
+- Admin link (👑 Admin) is visible to ALL users in SideDrawer NAV_ITEMS
+- Navbar also shows Admin Panel link based on `isAdmin`
+- No username/password login gate exists
+- Any user can navigate to `/admin` and see it if their IC identity has admin role
 
 ## Requested Changes (Diff)
 
 ### Add
-- Platform tabs: Instagram | YouTube | Facebook (replaces old Followers/Likes/Views tabs)
-- Service cards grid (2-column, glassmorphism) showing all services per platform with price per 1K
-  - Instagram: Followers (₹0.5/1K), Likes (₹0.15/1K), Views (₹0.15/1K), Shares (₹0.15/1K), Comments (₹0.30/1K), Story Views (₹0.15/1K)
-  - YouTube: Subscribers (₹1/1K), Views (₹0.15/1K), Likes (₹0.15/1K), Watch Time (₹0.50/1K)
-  - Facebook: Likes (₹0.15/1K), Followers (₹0.50/1K), Page Likes (₹0.15/1K), Views (₹0.15/1K)
-- Platform-based card glow: Instagram=pink, YouTube=red, Facebook=blue
-- On card click → navigate to /order with service pre-selected via URL param or localStorage
+- Admin login gate screen on `/admin` route: username + password form
+- Session stored in `localStorage` key `adminAuth` (JSON: `{authenticated: true, expiry: timestamp}`)
+- Admin credentials hardcoded: username `admin`, password `idboost@2024`
+- Professional dark login UI with shield icon, error state for wrong credentials
+- Logout button inside admin panel (clears session)
+- Dashboard stats card section (Total Users, Total Orders, Pending Payments)
+- Sidebar layout inside admin panel (Dashboard, Users, Payments, Orders tabs)
 
 ### Modify
-- Platform tabs become Instagram / YouTube / Facebook (not service-type tabs)
-- Keep Quick Recharge section (plans + QR + UPI app buttons)
-- Keep header/balance (TopBar handles this)
-- Keep Quick Box grid
-- Remove Stats grid and Features list (clutter)
+- `SideDrawer.tsx`: Remove `{ icon: "👑", label: "Admin", path: "/admin" }` from NAV_ITEMS entirely
+- `Navbar.tsx`: Remove all admin-visible links/buttons (`isAdmin` conditional blocks showing Admin Panel link)
+- `AdminPage.tsx`: Wrap entire admin content behind local auth check. If `adminAuth` session missing/expired → show login form. If authenticated → show admin panel with sidebar layout
+- Admin panel sections: Dashboard (stats), Users (list + add/deduct balance), Payments (screenshot requests + approve/reject), Orders (list + status update)
 
 ### Remove
-- Full order form (service dropdown, Instagram link input, quantity input, total charge box, T&C checkbox, Buy button)
-- "Place Order" form section
-- Stats grid
-- Features list
-- LiveStatsPopup references from HomePage
-- UTR verification section from HomePage recharge (keep screenshot-only as per existing WalletPage)
+- Admin link from SideDrawer
+- Admin link from Navbar
+- Multi-admin / settings tabs from admin panel
+- Framer Motion dependencies causing public deployment issues (use CSS animations only)
 
 ## Implementation Plan
-1. Replace HomePage platform tabs with Instagram/YouTube/Facebook tabs
-2. Replace order form card with 2-column service cards grid
-3. Each card: platform icon, service name, emoji icon, price badge (₹X/1K), platform-colored glow, glass effect
-4. Card click: save selected service key to localStorage, navigate to /order
-5. Keep Quick Recharge section (plans + QR + UPI buttons) unchanged
-6. Keep Quick Box grid
-7. Keep Blue Tick promo card
-8. Remove Stats, Features list, LiveStatsPopup, OrderLoader from HomePage
-9. OrderPage should read pre-selected service from localStorage on mount and auto-select it
+1. Update `SideDrawer.tsx` - remove Admin from NAV_ITEMS
+2. Update `Navbar.tsx` - remove isAdmin conditional admin link blocks
+3. Rewrite `AdminPage.tsx`:
+   - Local auth state: check `localStorage.adminAuth` on mount
+   - Login screen: username + password form with validation
+   - On correct credentials → set `localStorage.adminAuth` with 24hr expiry
+   - On wrong → show error message
+   - If authenticated → render AdminDashboard with sidebar
+   - Sidebar tabs: Dashboard | Users | Payments | Orders
+   - Dashboard: stat cards (total users, total orders, pending payments count)
+   - Payments: show `pendingUTR` from localStorage, approve/reject actions
+   - Orders: show orders from backend + localStorage orders, status toggle
+   - Users: show users with balance adjust
+   - Logout button clears `adminAuth` from localStorage

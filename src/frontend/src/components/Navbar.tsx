@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Menu, Rocket, Shield, Wallet, X } from "lucide-react";
+import { LayoutDashboard, Menu, Rocket, Wallet, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useAppContext } from "../context/AppContext";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAdmin, userProfile } = useAppContext();
+  const { userProfile } = useAppContext();
   const navigate = useNavigate();
 
   return (
@@ -61,15 +61,6 @@ export function Navbar() {
           >
             Dashboard
           </Link>
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              data-ocid="admin.link"
-            >
-              Admin
-            </Link>
-          )}
         </nav>
 
         {/* Right: wallet */}
@@ -119,16 +110,6 @@ export function Navbar() {
               >
                 <LayoutDashboard className="w-4 h-4" /> Dashboard
               </Link>
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
-                  onClick={() => setMobileOpen(false)}
-                  data-ocid="admin.link"
-                >
-                  <Shield className="w-4 h-4" /> Admin Panel
-                </Link>
-              )}
             </div>
           </motion.div>
         )}
