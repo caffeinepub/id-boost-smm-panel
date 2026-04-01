@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { triggerInsufficientBalancePopup } from "../components/InsufficientBalancePopup";
+import { LiveActivityFeed } from "../components/LiveActivityFeed";
 import { OrderLoader } from "../components/OrderLoader";
 import { OrderSuccessModal } from "../components/OrderSuccessModal";
 import { useAppContext } from "../context/AppContext";
@@ -821,6 +822,7 @@ export function OrderPage() {
         amount={successModal.amount}
         onClose={() => setSuccessModal((prev) => ({ ...prev, visible: false }))}
       />
+      <LiveActivityFeed />
     </main>
   );
 }

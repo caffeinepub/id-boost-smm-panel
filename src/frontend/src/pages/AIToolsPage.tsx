@@ -132,6 +132,11 @@ function getReply(t: string): string {
   const lang = detectLang(t);
   const lower = t.toLowerCase();
 
+  // --- Identity (all languages) ---
+  if (lower.includes("किसने बनाया") || lower.includes("who made you")) {
+    return "मुझे Anas ने बनाया है, मैं उन्हीं के लिए काम करता हूँ 😎";
+  }
+
   if (lang === "hi") {
     if (lower.includes("पेंडिंग") || lower.includes("pending")) {
       return "⏳ सर आपकी सर्विस पेंडिंग है\n\n👉 आप दूसरी सर्विस खरीद सकते हैं\n👉 या ₹250 रिचार्ज करें + ₹60 बोनस पाएं 🔥\n\nइससे आपकी ग्रोथ तेज होगी 🚀";
@@ -159,16 +164,66 @@ function getReply(t: string): string {
   }
 
   if (lang === "en") {
-    if (lower.includes("pending"))
-      return "⏳ Sir your service is pending, will be completed in 1-2 hours";
-    if (lower.includes("refund"))
+    // Identity
+    if (lower.includes("who made you") || lower.includes("who created you")) {
+      return "मुझे Anas ने बनाया है, मैं उन्हीं के लिए काम करता हूँ 😎";
+    }
+    // Deposit / Recharge / Add money
+    if (lower.includes("deposit") || lower.includes("add money")) {
+      return "Deposit करने के लिए Wallet में जाओ → Amount डालो → Payment complete करो 💰";
+    }
+    // Refund
+    if (lower.includes("refund")) {
       return "💯 Full refund (including bonus) within 72 hours if service not delivered";
-    if (lower.includes("blue"))
+    }
+    // Instagram services
+    if (lower.includes("instagram")) {
+      return "Instagram services:\n• Followers 🚀\n• Likes ❤️\n• Views 👀\n• Blue Tick ✔️\nसब fast delivery के साथ मिलती हैं";
+    }
+    // YouTube services
+    if (lower.includes("youtube")) {
+      return "YouTube services:\n• Subscribers 📺\n• Views 👀\n• Watch Time ⏱️\nHigh quality और fast delivery";
+    }
+    // Facebook services
+    if (lower.includes("facebook")) {
+      return "Facebook services:\n• Page Likes 👍\n• Followers 👥\n• Post Likes ❤️\nReal और safe services";
+    }
+    // Blue tick / verification
+    if (lower.includes("blue tick") || lower.includes("verification")) {
+      return "Blue Tick service available है ✔️\nApply करके verification process शुरू कर सकते हो";
+    }
+    // Blue (generic)
+    if (lower.includes("blue")) {
       return "Sir Blue Tick available for ₹499, delivered in 24 hours ✅";
-    if (lower.includes("followers"))
-      return "Sir Followers service available, order now 🚀";
-    if (lower.includes("service"))
+    }
+    // Order
+    if (lower.includes("order")) {
+      return "Order करने के लिए service select करो → link डालो → quantity डालो → submit करो 🚀";
+    }
+    // Price / rate
+    if (lower.includes("price") || lower.includes("rate")) {
+      return "Prices अलग-अलग services के हिसाब से होते हैं 😊\nआप service select करके देख सकते हो";
+    }
+    // Help
+    if (lower.includes("help")) {
+      return "मैं आपकी मदद के लिए हूँ 😊\nआप deposit, services, order या refund के बारे में पूछ सकते हो";
+    }
+    // Followers / Likes / Views
+    if (
+      lower.includes("followers") ||
+      lower.includes("likes") ||
+      lower.includes("views")
+    ) {
+      return "📈 यह service available है!\n• Followers 🚀\n• Likes ❤️\n• Views 👀\nOrder करने के लिए Order page पर जाएं";
+    }
+    // Pending
+    if (lower.includes("pending")) {
+      return "⏳ Sir your service is pending, will be completed in 1-2 hours";
+    }
+    // Service
+    if (lower.includes("service")) {
       return "🚀 Our services:\n\n👤 Followers\n❤️ Likes\n👁️ Views\n💬 Comments\n💎 Blue Tick ₹499";
+    }
     return "🔥 Best offer:\n₹250 + ₹60 bonus ⭐\n₹500 + ₹120 bonus 🔥\n\n👉 Recharge now and start your growth 🚀";
   }
 
@@ -689,8 +744,10 @@ function AIChatAssistant() {
         {[
           { label: "पेंडिंग", topic: "पेंडिंग", color: "#f59e0b" },
           { label: "रिफंड", topic: "रिफंड", color: "#ef4444" },
+          { label: "👥 Followers", topic: "followers", color: "#ec4899" },
+          { label: "❤️ Likes", topic: "likes", color: "#f43f5e" },
+          { label: "👁️ Views", topic: "views", color: "#8b5cf6" },
           { label: "💪 Gym", topic: "gym", color: "#3b82f6" },
-          { label: "❤️ Love", topic: "love", color: "#ec4899" },
           { label: "✈️ Travel", topic: "travel", color: "#22c55e" },
         ].map((s) => (
           <button

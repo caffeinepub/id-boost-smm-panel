@@ -9,7 +9,6 @@ import {
 import { BottomNav } from "./components/BottomNav";
 import { GodSpeakAI } from "./components/GodSpeakAI";
 import { HelpChat } from "./components/HelpChat";
-import { LiveTicker } from "./components/LiveTicker";
 import { TopBar } from "./components/TopBar";
 import { AppProvider } from "./context/AppContext";
 import { useLocalBalance, useSelectedAmount } from "./hooks/useLocalBalance";
@@ -59,7 +58,6 @@ function RootLayout() {
     <div className="min-h-screen">
       <TopBar />
       <div className="pt-[57px]">
-        <LiveTicker />
         <RechargeBanner />
         <div className="pb-20">
           <Outlet />
