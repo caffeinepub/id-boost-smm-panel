@@ -822,7 +822,7 @@ export function OrderPage() {
         amount={successModal.amount}
         onClose={() => setSuccessModal((prev) => ({ ...prev, visible: false }))}
       />
-      <LiveActivityFeed />
+      <LiveActivityFeed platform={activePlatform} />
     </main>
   );
 }

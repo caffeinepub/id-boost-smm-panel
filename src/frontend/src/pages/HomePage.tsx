@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { HomeLiveActivity } from "../components/HomeLiveActivity";
 
 type Platform = "instagram" | "youtube" | "facebook";
 
@@ -666,6 +667,9 @@ export function HomePage() {
           </button>
         ))}
       </motion.div>
+
+      {/* LIVE ACTIVITY */}
+      <HomeLiveActivity />
 
       {/* FOOTER */}
       <div className="pb-6 text-center text-gray-600 text-xs">
