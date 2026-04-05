@@ -1,48 +1,57 @@
-# ID BOOST SMM Panel — Admin Panel Security
+# ID BOOST SMM Panel — Real API Integration
 
 ## Current State
-- `/admin` route exists and shows AdminPage
-- AdminPage checks `isAdmin` from IC context (backend role)
-- Admin link (👑 Admin) is visible to ALL users in SideDrawer NAV_ITEMS
-- Navbar also shows Admin Panel link based on `isAdmin`
-- No username/password login gate exists
-- Any user can navigate to `/admin` and see it if their IC identity has admin role
+- OrderPage has multi-platform tabs (Instagram/YouTube/Facebook) with dynamic pricing based on localStorage balance
+- Motoko backend has `placeOrder(serviceId, link, quantity)` that saves to internal order store but does NOT call external SMM API
+- No HTTP outcalls to `apestsmmpanels.com` exist
+- Services use internal service IDs (BigInt 1–23), not the real external service IDs
 
 ## Requested Changes (Diff)
 
 ### Add
-- Admin login gate screen on `/admin` route: username + password form
-- Session stored in `localStorage` key `adminAuth` (JSON: `{authenticated: true, expiry: timestamp}`)
-- Admin credentials hardcoded: username `admin`, password `idboost@2024`
-- Professional dark login UI with shield icon, error state for wrong credentials
-- Logout button inside admin panel (clears session)
-- Dashboard stats card section (Total Users, Total Orders, Pending Payments)
-- Sidebar layout inside admin panel (Dashboard, Users, Payments, Orders tabs)
+- New Motoko function `placeOrderExternal(serviceKey, link, quantity)` that:
+  - Maps serviceKey to real external service ID
+  - Makes HTTP POST outcall to `https://apestsmmpanels.com/api/v2`
+  - Body: `key=d99a3954e1ec2d10c29c74ba9a385658&action=add&service=<ID>&link=<link>&quantity=<qty>`
+  - Returns the raw JSON response text
+- 6 fixed services mapped in backend:
+  - youtube_subscribers → 230
+  - youtube_views → 4568
+  - instagram_followers → 4679
+  - instagram_views → 1348
+  - facebook_followers → 4070
+  - facebook_views → 4772
+- New `SmmOrderForm` component (simple, standalone) OR update existing OrderPage with a new "API Orders" section
+- Frontend shows: success message with order ID on success, error message on failure
+- Loading state during API call
 
 ### Modify
-- `SideDrawer.tsx`: Remove `{ icon: "👑", label: "Admin", path: "/admin" }` from NAV_ITEMS entirely
-- `Navbar.tsx`: Remove all admin-visible links/buttons (`isAdmin` conditional blocks showing Admin Panel link)
-- `AdminPage.tsx`: Wrap entire admin content behind local auth check. If `adminAuth` session missing/expired → show login form. If authenticated → show admin panel with sidebar layout
-- Admin panel sections: Dashboard (stats), Users (list + add/deduct balance), Payments (screenshot requests + approve/reject), Orders (list + status update)
+- OrderPage: replace current service list with the 6 fixed real API services
+- Remove localStorage balance dependency from order flow
+- Quantity validation: minimum 100 (not 1000), link must not be empty
+- On success: show "Order placed successfully" + order ID from API response
+- On error: show exact error from API
+- Remove pricing/balance/cost display (per user requirement — no pricing logic)
+- Remove "Terms & Conditions" checkbox (keep it simple)
+- Remove insufficient balance check
 
 ### Remove
-- Admin link from SideDrawer
-- Admin link from Navbar
-- Multi-admin / settings tabs from admin panel
-- Framer Motion dependencies causing public deployment issues (use CSS animations only)
+- Dynamic price calculation box
+- localStorage balance deduction on order
+- AI Suggestion button
+- Comments textarea
+- Live Views notice
+- Premium/rate badges
+- Insufficient balance popup trigger
 
 ## Implementation Plan
-1. Update `SideDrawer.tsx` - remove Admin from NAV_ITEMS
-2. Update `Navbar.tsx` - remove isAdmin conditional admin link blocks
-3. Rewrite `AdminPage.tsx`:
-   - Local auth state: check `localStorage.adminAuth` on mount
-   - Login screen: username + password form with validation
-   - On correct credentials → set `localStorage.adminAuth` with 24hr expiry
-   - On wrong → show error message
-   - If authenticated → render AdminDashboard with sidebar
-   - Sidebar tabs: Dashboard | Users | Payments | Orders
-   - Dashboard: stat cards (total users, total orders, pending payments count)
-   - Payments: show `pendingUTR` from localStorage, approve/reject actions
-   - Orders: show orders from backend + localStorage orders, status toggle
-   - Users: show users with balance adjust
-   - Logout button clears `adminAuth` from localStorage
+1. Update `main.mo` to add `placeOrderExternal` using http-outcalls mixin
+2. Regenerate/update `backend.did.d.ts` bindings
+3. Rewrite `OrderPage.tsx` with:
+   - Simple dropdown for 6 services (grouped by platform)
+   - Link input
+   - Quantity input (min 100)
+   - Order button with loading spinner
+   - Success/error status display
+   - Calls `backend.placeOrderExternal(serviceKey, link, quantity)`
+4. Keep existing components (OrderSuccessModal, LiveActivityFeed) but simplify success flow

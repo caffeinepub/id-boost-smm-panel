@@ -90,7 +90,11 @@ export class ExternalBlob {
     }
 }
 export type ServiceId = bigint;
-export type UserId = Principal;
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
 export type Balance = number;
 export interface Service {
     id: ServiceId;
@@ -101,21 +105,6 @@ export interface Service {
     maxQty: bigint;
     externalServiceId: string;
 }
-export interface PaymentRequest {
-    id: bigint;
-    paymentMethod: PaymentMethod;
-    userId: UserId;
-    approved: boolean;
-    amount: Balance;
-    transactionId: string;
-}
-export interface UserInfo {
-    balance: Balance;
-    userId: UserId;
-}
-export interface UserProfile {
-    balance: Balance;
-}
 export interface Order {
     id: bigint;
     status: OrderStatus;
@@ -124,6 +113,35 @@ export interface Order {
     createdAt: bigint;
     quantity: bigint;
     serviceId: ServiceId;
+}
+export interface UserInfo {
+    balance: Balance;
+    userId: UserId;
+}
+export interface http_request_result {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
+export interface http_header {
+    value: string;
+    name: string;
+}
+export type UserId = Principal;
+export interface TransformationInput {
+    context: Uint8Array;
+    response: http_request_result;
+}
+export interface PaymentRequest {
+    id: bigint;
+    paymentMethod: PaymentMethod;
+    userId: UserId;
+    approved: boolean;
+    amount: Balance;
+    transactionId: string;
+}
+export interface UserProfile {
+    balance: Balance;
 }
 export enum OrderStatus {
     pending = "pending",
@@ -158,8 +176,13 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     placeOrder(serviceId: ServiceId, link: string, quantity: bigint): Promise<bigint>;
+    /**
+     * / HTTP outcall to SMM Panel external API
+     */
+    placeOrderExternal(serviceKey: string, link: string, quantity: bigint): Promise<string>;
     removeService(id: ServiceId): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    transform(input: TransformationInput): Promise<TransformationOutput>;
     updateService(id: ServiceId, name: string, externalServiceId: string, pricePerThousand: number, minQty: bigint, maxQty: bigint, active: boolean): Promise<void>;
 }
 import type { Balance as _Balance, Order as _Order, OrderStatus as _OrderStatus, PaymentMethod as _PaymentMethod, PaymentRequest as _PaymentRequest, ServiceId as _ServiceId, UserId as _UserId, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -403,6 +426,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async placeOrderExternal(arg0: string, arg1: string, arg2: bigint): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.placeOrderExternal(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.placeOrderExternal(arg0, arg1, arg2);
+            return result;
+        }
+    }
     async removeService(arg0: ServiceId): Promise<void> {
         if (this.processError) {
             try {
@@ -428,6 +465,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveCallerUserProfile(arg0);
+            return result;
+        }
+    }
+    async transform(arg0: TransformationInput): Promise<TransformationOutput> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.transform(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.transform(arg0);
             return result;
         }
     }

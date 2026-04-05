@@ -44,12 +44,27 @@ export interface Service {
   'externalServiceId' : string,
 }
 export type ServiceId = bigint;
+export interface TransformationInput {
+  'context' : Uint8Array,
+  'response' : http_request_result,
+}
+export interface TransformationOutput {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export type UserId = Principal;
 export interface UserInfo { 'balance' : Balance, 'userId' : UserId }
 export interface UserProfile { 'balance' : Balance }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface http_header { 'value' : string, 'name' : string }
+export interface http_request_result {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addFunds' : ActorMethod<[Balance, PaymentMethod, string], bigint>,
@@ -71,8 +86,13 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'placeOrder' : ActorMethod<[ServiceId, string, bigint], bigint>,
+  /**
+   * / HTTP outcall to SMM Panel external API
+   */
+  'placeOrderExternal' : ActorMethod<[string, string, bigint], string>,
   'removeService' : ActorMethod<[ServiceId], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
   'updateService' : ActorMethod<
     [ServiceId, string, string, number, bigint, bigint, boolean],
     undefined

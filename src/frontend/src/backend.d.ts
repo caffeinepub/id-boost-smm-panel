@@ -8,7 +8,11 @@ export interface None {
 }
 export type Option<T> = Some<T> | None;
 export type ServiceId = bigint;
-export type UserId = Principal;
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
 export type Balance = number;
 export interface Service {
     id: ServiceId;
@@ -19,21 +23,6 @@ export interface Service {
     maxQty: bigint;
     externalServiceId: string;
 }
-export interface PaymentRequest {
-    id: bigint;
-    paymentMethod: PaymentMethod;
-    userId: UserId;
-    approved: boolean;
-    amount: Balance;
-    transactionId: string;
-}
-export interface UserInfo {
-    balance: Balance;
-    userId: UserId;
-}
-export interface UserProfile {
-    balance: Balance;
-}
 export interface Order {
     id: bigint;
     status: OrderStatus;
@@ -42,6 +31,35 @@ export interface Order {
     createdAt: bigint;
     quantity: bigint;
     serviceId: ServiceId;
+}
+export interface UserInfo {
+    balance: Balance;
+    userId: UserId;
+}
+export interface http_request_result {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
+export interface http_header {
+    value: string;
+    name: string;
+}
+export type UserId = Principal;
+export interface TransformationInput {
+    context: Uint8Array;
+    response: http_request_result;
+}
+export interface PaymentRequest {
+    id: bigint;
+    paymentMethod: PaymentMethod;
+    userId: UserId;
+    approved: boolean;
+    amount: Balance;
+    transactionId: string;
+}
+export interface UserProfile {
+    balance: Balance;
 }
 export enum OrderStatus {
     pending = "pending",
@@ -75,7 +93,12 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     placeOrder(serviceId: ServiceId, link: string, quantity: bigint): Promise<bigint>;
+    /**
+     * / HTTP outcall to SMM Panel external API
+     */
+    placeOrderExternal(serviceKey: string, link: string, quantity: bigint): Promise<string>;
     removeService(id: ServiceId): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    transform(input: TransformationInput): Promise<TransformationOutput>;
     updateService(id: ServiceId, name: string, externalServiceId: string, pricePerThousand: number, minQty: bigint, maxQty: bigint, active: boolean): Promise<void>;
 }

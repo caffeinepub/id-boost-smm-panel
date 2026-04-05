@@ -54,6 +54,24 @@ export const Service = IDL.Record({
   'maxQty' : IDL.Nat,
   'externalServiceId' : IDL.Text,
 });
+export const http_header = IDL.Record({
+  'value' : IDL.Text,
+  'name' : IDL.Text,
+});
+export const http_request_result = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
+});
+export const TransformationInput = IDL.Record({
+  'context' : IDL.Vec(IDL.Nat8),
+  'response' : http_request_result,
+});
+export const TransformationOutput = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -81,8 +99,18 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'placeOrder' : IDL.Func([ServiceId, IDL.Text, IDL.Nat], [IDL.Nat], []),
+  'placeOrderExternal' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat],
+      [IDL.Text],
+      [],
+    ),
   'removeService' : IDL.Func([ServiceId], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'transform' : IDL.Func(
+      [TransformationInput],
+      [TransformationOutput],
+      ['query'],
+    ),
   'updateService' : IDL.Func(
       [ServiceId, IDL.Text, IDL.Text, IDL.Float64, IDL.Nat, IDL.Nat, IDL.Bool],
       [],
@@ -136,6 +164,21 @@ export const idlFactory = ({ IDL }) => {
     'maxQty' : IDL.Nat,
     'externalServiceId' : IDL.Text,
   });
+  const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
+  const http_request_result = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
+  const TransformationInput = IDL.Record({
+    'context' : IDL.Vec(IDL.Nat8),
+    'response' : http_request_result,
+  });
+  const TransformationOutput = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -167,8 +210,18 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'placeOrder' : IDL.Func([ServiceId, IDL.Text, IDL.Nat], [IDL.Nat], []),
+    'placeOrderExternal' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat],
+        [IDL.Text],
+        [],
+      ),
     'removeService' : IDL.Func([ServiceId], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'transform' : IDL.Func(
+        [TransformationInput],
+        [TransformationOutput],
+        ['query'],
+      ),
     'updateService' : IDL.Func(
         [
           ServiceId,

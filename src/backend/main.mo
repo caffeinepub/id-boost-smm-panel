@@ -12,6 +12,7 @@ import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import OutCall "http-outcalls/outcall"; // HTTP outcalls
 
 actor {
   // Initialize access control
@@ -442,5 +443,55 @@ actor {
       .map(func((userId, profile) : (Principal, UserProfile)) : UserInfo {
         { userId; balance = profile.balance };
       });
+  };
+
+  // Helper to map service keys to external IDs
+  func getServiceId(serviceKey : Text) : ?Nat {
+    switch (serviceKey) {
+      case ("youtube_subscribers") { ?230 };
+      case ("youtube_views") { ?4568 };
+      case ("instagram_followers") { ?4679 };
+      case ("instagram_views") { ?1348 };
+      case ("facebook_followers") { ?4070 };
+      case ("facebook_views") { ?4772 };
+      case (_) { null };
+    };
+  };
+
+  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
+  };
+
+  /// HTTP outcall to SMM Panel external API
+  public shared ({ caller }) func placeOrderExternal(serviceKey : Text, link : Text, quantity : Nat) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can place external orders");
+    };
+
+    // Validate input
+    if (quantity < 100) { Runtime.trap("Minimum quantity is 100") };
+    if (link.size() == 0) { Runtime.trap("Link cannot be empty") };
+
+    // Map service key to external ID
+    let externalServiceId = getServiceId(serviceKey);
+    if (externalServiceId == null) {
+      Runtime.trap("Invalid service key");
+    };
+
+    // Build body string as application/x-www-form-urlencoded
+    let requestBody = "key=d99a3954e1ec2d10c29c74ba9a385658&action=add&service=" # externalServiceId.toText() # "&link=" # link # "&quantity=" # quantity.toText();
+
+    // Make HTTP external call using the mixin interface
+    let response = await OutCall.httpPostRequest(
+      "https://apestsmmpanels.com/api/v2",
+      [{
+        name = "Content-Type"; value = "application/x-www-form-urlencoded";
+      }],
+      requestBody,
+      transform,
+    );
+
+    // Response is raw JSON text from external API
+    response;
   };
 };
