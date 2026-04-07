@@ -60,7 +60,7 @@
   body {
     @apply text-foreground;
     font-family: "Plus Jakarta Sans", sans-serif;
-    background: radial-gradient(circle at top, #0f172a, #020617);
+    background: #020617;
     min-height: 100vh;
   }
 
@@ -70,61 +70,21 @@
 }
 
 @layer utilities {
-  .gradient-text {
-    background: linear-gradient(135deg, #00d4ff, #8b5cf6, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
   .glass-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
   }
 
   .card-glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .glow-text {
-    text-shadow: 0 0 10px #38bdf8, 0 0 20px #f472b6;
-  }
-
-  .neon-btn {
-    background: linear-gradient(135deg, #3b82f6, #ec4899);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
-    transition: all 0.2s;
-  }
-
-  .neon-btn:hover {
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.7);
-    transform: translateY(-2px);
-  }
-
-  .neon-btn:active {
-    transform: translateY(0);
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
   }
 
   .tab-active {
-    background: #3b82f6;
+    background: #2563eb;
     border-radius: 9999px;
-  }
-
-  .btn-gradient {
-    background: linear-gradient(135deg, #00d4ff, #8b5cf6, #ec4899);
-    color: white;
-    font-weight: 600;
-    transition: opacity 0.2s, transform 0.2s;
-  }
-
-  .btn-gradient:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
   }
 
   .dark-input {
@@ -140,7 +100,6 @@
 
   .dark-input:focus {
     border-color: rgba(59, 130, 246, 0.5);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 
   .dark-input::placeholder {
@@ -181,34 +140,6 @@
 
   .ticker-animate {
     animation: ticker-scroll 25s linear infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%,
-    100% {
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 25px rgba(236, 72, 153, 0.7);
-    }
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s infinite;
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-6px);
-    }
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
   }
 }
 

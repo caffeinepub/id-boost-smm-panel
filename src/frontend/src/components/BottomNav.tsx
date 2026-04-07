@@ -15,9 +15,8 @@ export function BottomNav() {
     <div
       className="fixed bottom-0 left-0 right-0 w-full flex justify-around items-center px-2 py-2 z-50"
       style={{
-        background: "rgba(2, 6, 23, 0.95)",
-        backdropFilter: "blur(16px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: "#020617",
+        borderTop: "1px solid #1e293b",
       }}
       data-ocid="bottom_nav.panel"
     >
@@ -32,15 +31,14 @@ export function BottomNav() {
               data-ocid="bottom_nav.link"
             >
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center text-2xl animate-pulse-glow"
+                className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
                 style={{
-                  background: "linear-gradient(135deg, #3b82f6, #ec4899)",
-                  boxShadow: "0 0 20px rgba(59,130,246,0.6)",
+                  background: "#2563eb",
                 }}
               >
                 {item.icon}
               </div>
-              <span className="text-[10px] text-pink-400 font-semibold mt-0.5">
+              <span className="text-[10px] text-blue-400 font-semibold mt-0.5">
                 {item.label}
               </span>
             </Link>

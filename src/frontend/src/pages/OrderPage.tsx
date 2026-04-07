@@ -166,7 +166,7 @@ export function OrderPage() {
   return (
     <main className="max-w-[430px] mx-auto px-3 py-4">
       <h1
-        className="text-2xl font-black text-center mb-6 glow-text"
+        className="text-2xl font-black text-center text-white mb-6"
         style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
         data-ocid="order.section"
       >
@@ -184,20 +184,13 @@ export function OrderPage() {
               setService(g.items[0].key);
               setError("");
             }}
-            className="flex-1 py-2 rounded-xl text-sm font-bold transition-all duration-200"
+            className="flex-1 py-2 rounded-xl text-sm font-bold transition-colors duration-200"
             style={{
-              background:
-                activePlatform === g.group
-                  ? "linear-gradient(135deg, #2563eb, #9333ea)"
-                  : "rgba(255,255,255,0.06)",
+              background: activePlatform === g.group ? "#1e3a5f" : "#0f172a",
               border:
                 activePlatform === g.group
-                  ? "1px solid rgba(99,102,241,0.5)"
-                  : "1px solid rgba(255,255,255,0.08)",
-              boxShadow:
-                activePlatform === g.group
-                  ? "0 0 14px rgba(99,102,241,0.35)"
-                  : "none",
+                  ? "1px solid #2563eb"
+                  : "1px solid #1e293b",
               color: activePlatform === g.group ? "#fff" : "#94a3b8",
             }}
             data-ocid="order.tab"
@@ -212,7 +205,15 @@ export function OrderPage() {
         ))}
       </div>
 
-      <div className="glass-card p-5" data-ocid="order.card">
+      <div
+        className="p-5"
+        style={{
+          background: "#0f172a",
+          border: "1px solid #1e293b",
+          borderRadius: "12px",
+        }}
+        data-ocid="order.card"
+      >
         {/* Service dropdown */}
         <div className="mb-4">
           <label
@@ -260,7 +261,7 @@ export function OrderPage() {
           />
         </div>
 
-        {/* Quantity input */}
+        {/* Quantity input with +/- buttons */}
         <div className="mb-4">
           <label
             htmlFor="order-qty"
@@ -268,19 +269,52 @@ export function OrderPage() {
           >
             Quantity <span className="text-gray-600">(min 100)</span>
           </label>
-          <input
-            id="order-qty"
-            type="number"
-            className="dark-input"
-            min={100}
-            step={100}
-            value={quantity}
-            onChange={(e) => {
-              setQuantity(Number(e.target.value));
-              setError("");
-            }}
-            data-ocid="order.input"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setQuantity((prev) => Math.max(100, prev - 100));
+                setError("");
+              }}
+              className="px-3 py-2 rounded-lg text-white font-bold text-base flex-shrink-0"
+              style={{
+                background: "#0f172a",
+                border: "1px solid #1e293b",
+              }}
+              data-ocid="order.secondary_button"
+            >
+              −
+            </button>
+            <input
+              id="order-qty"
+              type="number"
+              className="dark-input"
+              min={100}
+              step={100}
+              value={quantity}
+              onChange={(e) => {
+                setQuantity(Number(e.target.value));
+                setError("");
+              }}
+              style={{ textAlign: "center" }}
+              data-ocid="order.input"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setQuantity((prev) => prev + 100);
+                setError("");
+              }}
+              className="px-3 py-2 rounded-lg text-white font-bold text-base flex-shrink-0"
+              style={{
+                background: "#0f172a",
+                border: "1px solid #1e293b",
+              }}
+              data-ocid="order.primary_button"
+            >
+              +
+            </button>
+          </div>
         </div>
 
         {/* Price display */}
@@ -295,13 +329,7 @@ export function OrderPage() {
           <span className="text-sm text-gray-400">
             ₹{rate}/1K × {quantity.toLocaleString()}
           </span>
-          <span
-            className="text-lg font-black"
-            style={{
-              color: "#38bdf8",
-              textShadow: "0 0 10px rgba(56,189,248,0.5)",
-            }}
-          >
+          <span className="text-lg font-black" style={{ color: "#38bdf8" }}>
             ₹{totalPrice.toFixed(2)}
           </span>
         </div>
@@ -326,11 +354,8 @@ export function OrderPage() {
           type="button"
           onClick={handleOrder}
           disabled={loading}
-          className="w-full py-3.5 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200"
-          style={{
-            background: "linear-gradient(135deg, #2563eb, #9333ea)",
-            boxShadow: "0 0 18px rgba(99,102,241,0.45)",
-          }}
+          className="w-full py-3.5 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 transition-colors duration-200"
+          style={{ background: "#2563eb" }}
           data-ocid="order.submit_button"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

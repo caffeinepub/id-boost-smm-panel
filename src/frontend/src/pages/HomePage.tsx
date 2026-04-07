@@ -1,5 +1,4 @@
 import { useNavigate } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HomeLiveActivity } from "../components/HomeLiveActivity";
@@ -121,34 +120,10 @@ const PLATFORM_SERVICES: Record<Platform, ServiceDef[]> = {
   ],
 };
 
-const PLATFORM_TABS: {
-  key: Platform;
-  label: string;
-  emoji: string;
-  color: string;
-  glow: string;
-}[] = [
-  {
-    key: "instagram",
-    label: "Instagram",
-    emoji: "📸",
-    color: "#e1306c",
-    glow: "rgba(225,48,108,0.4)",
-  },
-  {
-    key: "youtube",
-    label: "YouTube",
-    emoji: "▶️",
-    color: "#ff0000",
-    glow: "rgba(255,0,0,0.4)",
-  },
-  {
-    key: "facebook",
-    label: "Facebook",
-    emoji: "👍",
-    color: "#1877f2",
-    glow: "rgba(24,119,242,0.4)",
-  },
+const PLATFORM_TABS: { key: Platform; label: string; emoji: string }[] = [
+  { key: "instagram", label: "Instagram", emoji: "📸" },
+  { key: "youtube", label: "YouTube", emoji: "▶️" },
+  { key: "facebook", label: "Facebook", emoji: "👍" },
 ];
 
 const UPI_ID = "mohd4143@ptyes";
@@ -166,7 +141,7 @@ const PLANS = [
 const QUICK_BOX = [
   { icon: "📦", label: "Orders", path: "/orders-history", color: "#38bdf8" },
   { icon: "💰", label: "Wallet", path: "/wallet", color: "#4ade80" },
-  { icon: "🚀", label: "Boost", path: "/order", color: "#f472b6" },
+  { icon: "🚀", label: "Boost", path: "/order", color: "#93c5fd" },
   { icon: "📊", label: "Analytics", path: "/analytics", color: "#a78bfa" },
   { icon: "💎", label: "Blue Tick", path: "/blue-tick", color: "#38bdf8" },
 ];
@@ -190,7 +165,6 @@ export function HomePage() {
     bonus: number;
   } | null>(null);
 
-  const currentPlatform = PLATFORM_TABS.find((p) => p.key === activePlatform)!;
   const services = PLATFORM_SERVICES[activePlatform];
 
   const parsedRecharge = selectedPlan ? selectedPlan.amount : 0;
@@ -244,32 +218,20 @@ export function HomePage() {
   return (
     <main className="max-w-[430px] mx-auto px-3">
       {/* HERO */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center py-6"
-        data-ocid="home.section"
-      >
+      <div className="text-center py-6" data-ocid="home.section">
         <h1
-          className="text-3xl font-bold text-blue-400 glow-text"
+          className="text-3xl font-bold text-white"
           style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
         >
           ID BOOST
         </h1>
-        <p className="text-pink-400 mt-1 text-sm font-medium">
+        <p className="text-gray-400 mt-1 text-sm font-medium">
           Premium SMM Panel &bull; Ultra Cheap Rates
         </p>
-      </motion.div>
+      </div>
 
       {/* PLATFORM TABS */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex justify-center gap-2 mb-5"
-        data-ocid="home.tab"
-      >
+      <div className="flex justify-center gap-2 mb-5" data-ocid="home.tab">
         {PLATFORM_TABS.map((tab) => {
           const isActive = activePlatform === tab.key;
           return (
@@ -277,16 +239,11 @@ export function HomePage() {
               key={tab.key}
               type="button"
               onClick={() => setActivePlatform(tab.key)}
-              className="px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 flex items-center gap-1.5"
+              className="px-4 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-1.5"
               style={{
-                background: isActive
-                  ? `linear-gradient(135deg, ${tab.color}33, ${tab.color}22)`
-                  : "rgba(255,255,255,0.05)",
-                border: isActive
-                  ? `1.5px solid ${tab.color}`
-                  : "1.5px solid rgba(255,255,255,0.1)",
-                color: isActive ? tab.color : "#9ca3af",
-                boxShadow: isActive ? `0 0 14px ${tab.glow}` : "none",
+                background: isActive ? "#1e3a5f" : "#0f172a",
+                border: isActive ? "1px solid #2563eb" : "1px solid #1e293b",
+                color: isActive ? "#93c5fd" : "#6b7280",
               }}
               data-ocid="home.tab"
             >
@@ -295,149 +252,109 @@ export function HomePage() {
             </button>
           );
         })}
-      </motion.div>
+      </div>
 
       {/* SERVICE CARDS GRID */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activePlatform}
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.97 }}
-          transition={{ duration: 0.25 }}
-          className="grid grid-cols-2 gap-3 mb-5"
-          data-ocid="home.list"
-        >
-          {services.map((svc, idx) => (
-            <motion.button
-              key={svc.key}
-              type="button"
-              onClick={() => handleServiceClick(svc)}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="relative flex flex-col items-center justify-center gap-1 p-4 rounded-2xl text-left w-full"
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: `1px solid ${currentPlatform.color}33`,
-                boxShadow: `0 0 15px ${currentPlatform.glow}`,
-                transition: "box-shadow 0.2s",
-              }}
-              data-ocid={`home.item.${idx + 1}`}
-            >
-              {svc.isPremium && (
-                <span
-                  className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                  style={{
-                    background: "rgba(250,204,21,0.15)",
-                    color: "#facc15",
-                    border: "1px solid rgba(250,204,21,0.3)",
-                  }}
-                >
-                  ⭐ PRO
-                </span>
-              )}
-              <span className="text-3xl">{svc.emoji}</span>
-              <span className="text-white font-bold text-sm mt-1">
-                {svc.label}
-              </span>
+      <div className="grid grid-cols-2 gap-3 mb-5" data-ocid="home.list">
+        {services.map((svc, idx) => (
+          <button
+            key={svc.key}
+            type="button"
+            onClick={() => handleServiceClick(svc)}
+            className="relative flex flex-col items-center justify-center gap-1 p-4 rounded-xl text-left w-full transition-colors duration-150 hover:bg-[#1e293b] active:scale-95"
+            style={{
+              background: "#0f172a",
+              border: "1px solid #1e293b",
+            }}
+            data-ocid={`home.item.${idx + 1}`}
+          >
+            {svc.isPremium && (
               <span
-                className="text-xs font-semibold px-2 py-0.5 rounded-full mt-0.5"
+                className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
                 style={{
-                  background: `${currentPlatform.color}22`,
-                  color: currentPlatform.color,
-                  border: `1px solid ${currentPlatform.color}44`,
+                  background: "#1c1c1c",
+                  color: "#d97706",
+                  border: "1px solid #d97706",
                 }}
               >
-                ₹{svc.ratePerThousand} / 1K
+                ⭐ PRO
               </span>
-              <span className="text-[10px] text-gray-500 mt-0.5">
-                Tap to Order →
-              </span>
-            </motion.button>
-          ))}
-        </motion.div>
-      </AnimatePresence>
+            )}
+            <span className="text-3xl">{svc.emoji}</span>
+            <span className="text-white font-bold text-sm mt-1">
+              {svc.label}
+            </span>
+            <span
+              className="text-xs font-semibold mt-0.5"
+              style={{ color: "#4ade80" }}
+            >
+              ₹{svc.ratePerThousand} / 1K
+            </span>
+            <span className="text-[10px] text-gray-500 mt-0.5">
+              Tap to Order →
+            </span>
+          </button>
+        ))}
+      </div>
 
       {/* BLUE TICK PROMO CARD */}
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.45, delay: 0.15 }}
+      <button
+        type="button"
         onClick={() => navigate({ to: "/blue-tick" })}
-        className="mb-4 cursor-pointer"
+        className="w-full mb-4 hover:opacity-90 transition-opacity"
         style={{
           padding: "20px",
-          borderRadius: "20px",
-          background: "linear-gradient(45deg, #3b82f6, #9333ea)",
+          borderRadius: "16px",
+          background: "#0f172a",
+          border: "1px solid #2563eb",
           textAlign: "center",
-          boxShadow: "0 0 40px #3b82f6",
+          cursor: "pointer",
         }}
-        whileHover={{ scale: 1.02, boxShadow: "0 0 60px #3b82f6" }}
-        whileTap={{ scale: 0.98 }}
         data-ocid="home.card"
       >
         <img
           src="/assets/uploads/20260321_003208-1.png"
           alt="Blue Tick Badge"
-          style={{
-            width: 70,
-            display: "block",
-            margin: "0 auto 10px",
-            filter: "drop-shadow(0 0 10px #3b82f6)",
-          }}
+          style={{ width: 70, display: "block", margin: "0 auto 10px" }}
         />
         <h2 className="text-white font-bold text-xl mb-2">
           💎 Instagram Blue Tick
         </h2>
-        <p className="text-white text-sm mb-1">✔ 24 घंटे में Verification</p>
-        <p className="text-white text-sm mb-3">✔ No Password Required</p>
+        <p className="text-gray-400 text-sm mb-1">✔ 24 घंटे में Verification</p>
+        <p className="text-gray-400 text-sm mb-3">✔ No Password Required</p>
         <div
           className="font-bold mb-4"
-          style={{ fontSize: 22, color: "#00ff88" }}
+          style={{ fontSize: 22, color: "#22c55e" }}
         >
           ₹499 Only
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate({ to: "/blue-tick" });
-          }}
-          className="font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
+        <span
+          className="inline-block font-semibold transition-colors duration-200"
           style={{
-            background: "black",
+            background: "#2563eb",
             color: "white",
             padding: "10px 20px",
-            borderRadius: 10,
-            border: "none",
-            cursor: "pointer",
+            borderRadius: 8,
           }}
-          data-ocid="home.primary_button"
         >
           Apply Now
-        </button>
-      </motion.div>
+        </span>
+      </button>
 
       {/* QUICK RECHARGE */}
-      <motion.div
+      <div
         id="quick-recharge"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="glass-card p-5 mb-4"
+        className="p-5 mb-4"
+        style={{
+          background: "#0f172a",
+          border: "1px solid #1e293b",
+          borderRadius: "12px",
+        }}
         data-ocid="home.panel"
       >
         <h2
           className="text-lg font-bold mb-4 flex items-center gap-2"
-          style={{
-            color: "#4ade80",
-            textShadow: "0 0 10px rgba(74,222,128,0.4)",
-          }}
+          style={{ color: "#4ade80" }}
         >
           💰 Quick Recharge
         </h2>
@@ -447,32 +364,20 @@ export function HomePage() {
             const isSelected = selectedPlan?.amount === plan.amount;
             const isPopular = plan.tag === "popular";
             const isBest = plan.tag === "best";
-            let borderStyle = "1px solid rgba(255,255,255,0.08)";
-            if (isSelected) borderStyle = "2px solid rgba(99,102,241,0.9)";
-            else if (isPopular) borderStyle = "2px solid #3b82f6";
-            else if (isBest) borderStyle = "2px solid #22c55e";
-            let boxShadow = "5px 5px 15px #000, -5px -5px 15px #1f2937";
-            if (isSelected)
-              boxShadow =
-                "0 0 20px #6366f1, 0 0 40px rgba(99,102,241,0.4), 5px 5px 15px #000";
+            let borderStyle = "1px solid #1e293b";
+            if (isSelected) borderStyle = "2px solid #2563eb";
+            else if (isPopular) borderStyle = "1px solid #3b82f6";
+            else if (isBest) borderStyle = "1px solid #22c55e";
             return (
-              <motion.button
+              <button
                 key={plan.amount}
                 type="button"
                 onClick={() => setSelectedPlan(plan)}
-                whileHover={{
-                  boxShadow:
-                    "0 0 20px #3b82f6, 0 0 40px #9333ea, 5px 5px 15px #000",
-                }}
-                whileTap={{ scale: 0.95, y: 4 }}
-                className="relative flex flex-col items-center justify-center text-white font-bold transition-colors duration-200"
+                className="relative flex flex-col items-center justify-center text-white font-bold transition-colors duration-200 active:scale-95"
                 style={{
-                  background: isSelected
-                    ? "linear-gradient(145deg, #1e3a6e, #0f1f4a)"
-                    : "linear-gradient(145deg, #1e293b, #0f172a)",
-                  borderRadius: 15,
+                  background: isSelected ? "#1e3a5f" : "#111827",
+                  borderRadius: 10,
                   border: borderStyle,
-                  boxShadow,
                   padding: "12px 16px",
                   minWidth: 80,
                   flex: "1 1 calc(33% - 8px)",
@@ -482,11 +387,7 @@ export function HomePage() {
                 {isPopular && (
                   <span
                     className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
-                    style={{
-                      background: "#3b82f6",
-                      color: "#fff",
-                      boxShadow: "0 0 8px rgba(59,130,246,0.8)",
-                    }}
+                    style={{ background: "#3b82f6", color: "#fff" }}
                   >
                     ⭐ Popular
                   </span>
@@ -494,11 +395,7 @@ export function HomePage() {
                 {isBest && (
                   <span
                     className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
-                    style={{
-                      background: "#16a34a",
-                      color: "#fff",
-                      boxShadow: "0 0 8px rgba(34,197,94,0.8)",
-                    }}
+                    style={{ background: "#16a34a", color: "#fff" }}
                   >
                     Best
                   </span>
@@ -510,151 +407,104 @@ export function HomePage() {
                 >
                   +₹{plan.bonus} Bonus
                 </span>
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
-        <AnimatePresence>
-          {selectedPlan && (
-            <motion.p
-              key={selectedPlan.amount}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-              className="text-sm font-bold text-center mb-3 py-2 rounded-xl"
-              style={{
-                color: "#4ade80",
-                background: "rgba(74,222,128,0.08)",
-                border: "1px solid rgba(74,222,128,0.25)",
-                textShadow: "0 0 8px rgba(74,222,128,0.5)",
-              }}
-            >
-              You Pay ₹{selectedPlan.amount} → You Get ₹
-              {selectedPlan.amount + selectedPlan.bonus}
-            </motion.p>
-          )}
-        </AnimatePresence>
+        {selectedPlan && (
+          <p
+            className="text-sm font-bold text-center mb-3 py-2 rounded-xl"
+            style={{
+              color: "#4ade80",
+              background: "rgba(74,222,128,0.08)",
+              border: "1px solid rgba(74,222,128,0.2)",
+            }}
+          >
+            You Pay ₹{selectedPlan.amount} → You Get ₹
+            {selectedPlan.amount + selectedPlan.bonus}
+          </p>
+        )}
 
-        <AnimatePresence>
-          {showQR && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              transition={{ duration: 0.3 }}
-              className="flex flex-col items-center"
+        {showQR && (
+          <div className="flex flex-col items-center">
+            <div
+              className="rounded-xl p-3 mb-3"
+              style={{ background: "white" }}
             >
-              <div
-                className="rounded-2xl p-3 mb-3"
-                style={{
-                  background: "white",
-                  boxShadow: "0 0 28px rgba(56,189,248,0.3)",
+              <img
+                key={qrSrc}
+                src={qrSrc}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    "/assets/uploads/Image-1-1.jpg";
                 }}
-              >
-                <motion.img
-                  key={qrSrc}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  src={qrSrc}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src =
-                      "/assets/uploads/Image-1-1.jpg";
-                  }}
-                  alt="UPI QR Code"
-                  style={{ width: 180, height: 180, display: "block" }}
-                />
-              </div>
-              <p className="text-blue-300 text-sm font-semibold mb-0.5">
-                UPI ID:{" "}
-                <span
-                  className="text-white font-black"
-                  style={{ textShadow: "0 0 8px rgba(147,197,253,0.5)" }}
-                >
-                  {UPI_ID}
-                </span>
-              </p>
-              <p
-                className="text-pink-400 font-black text-xl mb-4"
-                style={{ textShadow: "0 0 10px rgba(244,114,182,0.6)" }}
-              >
-                Scan &amp; Pay ₹{parsedRecharge.toFixed(2)}
-              </p>
+                alt="UPI QR Code"
+                style={{ width: 180, height: 180, display: "block" }}
+              />
+            </div>
+            <p className="text-blue-300 text-sm font-semibold mb-0.5">
+              UPI ID: <span className="text-white font-black">{UPI_ID}</span>
+            </p>
+            <p className="text-white font-black text-xl mb-4">
+              Scan &amp; Pay ₹{parsedRecharge.toFixed(2)}
+            </p>
 
-              <div className="flex gap-2 w-full mb-3">
-                <button
-                  type="button"
-                  onClick={() => handleUpiAppPay("gpay")}
-                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
-                  style={{
-                    background: "#0f9d58",
-                    boxShadow: "0 0 14px rgba(15,157,88,0.45)",
-                    border: "none",
-                  }}
-                  data-ocid="home.primary_button"
-                >
-                  🟢 GPay
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleUpiAppPay("phonepe")}
-                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
-                  style={{
-                    background: "#5f259f",
-                    boxShadow: "0 0 14px rgba(95,37,159,0.45)",
-                    border: "none",
-                  }}
-                  data-ocid="home.primary_button"
-                >
-                  🟣 PhonePe
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleUpiAppPay("paytm")}
-                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
-                  style={{
-                    background: "#002970",
-                    boxShadow: "0 0 14px rgba(0,41,112,0.45)",
-                    border: "1px solid rgba(59,130,246,0.3)",
-                  }}
-                  data-ocid="home.primary_button"
-                >
-                  🟡 Paytm
-                </button>
-              </div>
-
+            <div className="flex gap-2 w-full mb-3">
               <button
                 type="button"
-                onClick={handlePayNow}
-                className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-95"
+                onClick={() => handleUpiAppPay("gpay")}
+                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors duration-150 active:scale-95"
+                style={{ background: "#0f9d58", border: "none" }}
+                data-ocid="home.primary_button"
+              >
+                🟢 GPay
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUpiAppPay("phonepe")}
+                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors duration-150 active:scale-95"
+                style={{ background: "#5f259f", border: "none" }}
+                data-ocid="home.primary_button"
+              >
+                🟣 PhonePe
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUpiAppPay("paytm")}
+                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors duration-150 active:scale-95"
                 style={{
-                  background: "linear-gradient(135deg, #16a34a, #22c55e)",
-                  boxShadow: "0 0 22px rgba(34,197,94,0.5)",
+                  background: "#002970",
+                  border: "1px solid rgba(59,130,246,0.3)",
                 }}
                 data-ocid="home.primary_button"
               >
-                ⚡ Pay Now (GPay / PhonePe / Paytm)
+                🟡 Paytm
               </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePayNow}
+              className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 transition-colors duration-200 active:scale-95"
+              style={{ background: "#16a34a" }}
+              data-ocid="home.primary_button"
+            >
+              ⚡ Pay Now (GPay / PhonePe / Paytm)
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* QUICK BOX */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="grid grid-cols-2 gap-3 mb-4"
-      >
+      <div className="grid grid-cols-2 gap-3 mb-4">
         {QUICK_BOX.map((item) => (
           <button
             key={item.path}
             type="button"
             onClick={() => navigate({ to: item.path })}
-            className="glass-card p-4 flex items-center gap-3 hover:scale-105 transition-transform duration-200 text-left"
+            className="p-4 flex items-center gap-3 hover:bg-[#1e293b] transition-colors duration-200 text-left rounded-xl"
+            style={{ background: "#0f172a", border: "1px solid #1e293b" }}
             data-ocid="home.button"
           >
             <span className="text-2xl">{item.icon}</span>
@@ -666,16 +516,16 @@ export function HomePage() {
             </span>
           </button>
         ))}
-      </motion.div>
+      </div>
 
       {/* LIVE ACTIVITY */}
       <HomeLiveActivity />
 
       {/* FOOTER */}
       <div className="pb-6 text-center text-gray-600 text-xs">
-        &copy; 2019.{" "}
+        &copy; {new Date().getFullYear()}.{" "}
         <a
-          href="https://caffeine.ai"
+          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-gray-400"

@@ -22,9 +22,8 @@ export function TopBar() {
       <div
         className="flex justify-between items-center px-4 py-3 fixed top-0 left-0 right-0 z-50"
         style={{
-          background: "rgba(2, 6, 23, 0.9)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          background: "#020617",
+          borderBottom: "1px solid #1e293b",
         }}
         data-ocid="topbar.panel"
       >
@@ -33,7 +32,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="flex flex-col justify-center items-center gap-[5px] w-9 h-9 rounded-lg transition-all duration-200 hover:bg-white/10 active:scale-90"
+            className="flex flex-col justify-center items-center gap-[5px] w-9 h-9 rounded-lg transition-colors duration-200 hover:bg-white/10 active:scale-90"
             aria-label="Open menu"
             data-ocid="topbar.button"
           >
@@ -42,9 +41,8 @@ export function TopBar() {
               style={{
                 width: "20px",
                 height: "2px",
-                background: "#38bdf8",
+                background: "#94a3b8",
                 borderRadius: "2px",
-                boxShadow: "0 0 6px rgba(56,189,248,0.7)",
               }}
             />
             <span
@@ -52,10 +50,9 @@ export function TopBar() {
               style={{
                 width: "14px",
                 height: "2px",
-                background: "#38bdf8",
+                background: "#94a3b8",
                 borderRadius: "2px",
                 alignSelf: "flex-start",
-                boxShadow: "0 0 6px rgba(56,189,248,0.5)",
               }}
             />
             <span
@@ -63,9 +60,8 @@ export function TopBar() {
               style={{
                 width: "20px",
                 height: "2px",
-                background: "#38bdf8",
+                background: "#94a3b8",
                 borderRadius: "2px",
-                boxShadow: "0 0 6px rgba(56,189,248,0.7)",
               }}
             />
           </button>
@@ -73,7 +69,7 @@ export function TopBar() {
           <div className="flex items-center gap-2">
             <span className="text-xl">🚀</span>
             <h1
-              className="font-bold text-xl glow-text"
+              className="font-bold text-xl text-white"
               style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
             >
               ID BOOST
@@ -87,12 +83,11 @@ export function TopBar() {
           onClick={handleBalanceClick}
           className="text-white text-sm font-black transition-transform duration-150 active:scale-95"
           style={{
-            background: "#22c55e",
+            background: "#16a34a",
             padding: "8px 18px",
             borderRadius: "20px",
             border: "none",
             cursor: "pointer",
-            boxShadow: "0 0 20px rgba(34,197,94,0.6)",
           }}
           data-ocid="topbar.card"
         >

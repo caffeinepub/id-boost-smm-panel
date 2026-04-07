@@ -1,5 +1,4 @@
 import { useNavigate } from "@tanstack/react-router";
-import { motion } from "motion/react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { RefundHistory } from "../components/RefundHistory";
@@ -63,14 +62,7 @@ export function WalletPage() {
     };
     window.location.href = links[app];
     setShowUTR(true);
-    toast("App se payment karo phir UTR darj karo", {
-      style: {
-        background: "linear-gradient(135deg, #1e293b, #0f172a)",
-        border: "1px solid rgba(59,130,246,0.5)",
-        color: "#fff",
-        borderRadius: "16px",
-      },
-    });
+    toast("App se payment karo phir UTR darj karo");
   }
 
   function handleVerifyUTR() {
@@ -94,42 +86,32 @@ export function WalletPage() {
   return (
     <main className="max-w-[430px] mx-auto px-3 py-4 pb-24">
       {/* Back Button */}
-      <motion.button
+      <button
         type="button"
         onClick={() => navigate({ to: "/" })}
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        whileTap={{ scale: 0.95 }}
         data-ocid="wallet.link"
-        className="flex items-center gap-2 text-sm font-semibold mb-4 px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105"
+        className="flex items-center gap-2 text-sm font-semibold mb-4 px-4 py-2 rounded-xl transition-colors duration-200 hover:bg-white/5"
         style={{
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(59,130,246,0.25)",
+          background: "#0f172a",
+          border: "1px solid #1e293b",
           color: "#93c5fd",
-          backdropFilter: "blur(8px)",
-          boxShadow: "0 0 12px rgba(59,130,246,0.15)",
         }}
       >
         <span style={{ fontSize: "16px" }}>←</span>
         <span>Back to Home</span>
-      </motion.button>
+      </button>
 
       {/* Header */}
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-black text-center mb-4 glow-text"
+      <h1
+        className="text-2xl font-black text-center text-white mb-4"
         style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
         data-ocid="wallet.section"
       >
         💰 My Wallet
-      </motion.h1>
+      </h1>
 
       {/* VIP Balance Card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
+      <div
         data-ocid="wallet.card"
         className="relative overflow-hidden mb-5"
         style={{
@@ -137,14 +119,11 @@ export function WalletPage() {
             "linear-gradient(135deg, #0f1f3d 0%, #1a1040 50%, #0f1f3d 100%)",
           border: "1px solid rgba(212,175,55,0.35)",
           borderRadius: "18px",
-          boxShadow:
-            "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(212,175,55,0.15)",
           padding: "24px 20px 20px",
         }}
       >
         {/* Shimmer overlay */}
         <div
-          className="vip-shimmer"
           style={{
             position: "absolute",
             inset: 0,
@@ -184,7 +163,6 @@ export function WalletPage() {
               fontSize: "52px",
               fontWeight: 800,
               color: "#ffffff",
-              textShadow: "0 0 30px rgba(212,175,55,0.4)",
               lineHeight: 1,
               fontFamily: "Bricolage Grotesque, sans-serif",
               letterSpacing: "-1px",
@@ -276,15 +254,10 @@ export function WalletPage() {
             ↩ {hasPending ? "Pending" : "Request Refund"}
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Refund History */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.14 }}
-        style={{ marginBottom: "16px" }}
-      >
+      <div style={{ marginBottom: "16px" }}>
         <h2
           style={{
             color: "#e5e7eb",
@@ -297,24 +270,20 @@ export function WalletPage() {
           Refund History
         </h2>
         <RefundHistory />
-      </motion.div>
+      </div>
 
       {/* Quick Recharge Section */}
-      <motion.div
+      <div
         ref={rechargeRef}
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="glass-card p-5 mb-4"
+        className="p-5 mb-4"
+        style={{
+          background: "#0f172a",
+          border: "1px solid #1e293b",
+          borderRadius: "12px",
+        }}
         data-ocid="wallet.panel"
       >
-        <h2
-          className="text-lg font-black mb-1"
-          style={{
-            color: "#22c55e",
-            textShadow: "0 0 12px rgba(34,197,94,0.5)",
-          }}
-        >
+        <h2 className="text-lg font-black mb-1" style={{ color: "#22c55e" }}>
           ⚡ Quick Recharge
         </h2>
         <p className="text-xs text-gray-500 mb-4">
@@ -334,25 +303,16 @@ export function WalletPage() {
                 type="button"
                 onClick={() => handleSelectPlan(plan)}
                 data-ocid="wallet.toggle"
-                className="relative flex-1 text-white text-sm font-bold transition-all duration-200 active:scale-90"
+                className="relative flex-1 text-white text-sm font-bold transition-colors duration-200 active:scale-90"
                 style={{
                   background: "#020617",
                   padding: "12px 10px",
                   borderRadius: "12px",
-                  border: isPopularSmall
-                    ? isSelected
+                  border: isSelected
+                    ? "2px solid #2563eb"
+                    : isPopularSmall
                       ? "2px solid #2563eb"
-                      : "2px solid #2563eb"
-                    : isSelected
-                      ? "2px solid rgba(59,130,246,0.5)"
-                      : "1.5px solid rgba(59,130,246,0.3)",
-                  boxShadow: isPopularSmall
-                    ? isSelected
-                      ? "0 0 18px rgba(37,99,235,0.5)"
-                      : "0 0 18px rgba(37,99,235,0.5)"
-                    : isSelected
-                      ? "0 0 12px rgba(59,130,246,0.3)"
-                      : "0 0 12px rgba(59,130,246,0.2)",
+                      : "1.5px solid #1e293b",
                   textAlign: "center" as const,
                 }}
               >
@@ -395,35 +355,20 @@ export function WalletPage() {
                 type="button"
                 onClick={() => handleSelectPlan(plan)}
                 data-ocid="wallet.toggle"
-                className="relative text-white text-sm font-bold transition-all duration-200 active:scale-90"
+                className="relative text-white text-sm font-bold transition-colors duration-200 active:scale-90"
                 style={{
-                  background: isSelected
-                    ? "linear-gradient(145deg, #1e40af, #1e3a5f)"
-                    : "linear-gradient(145deg, #1e293b, #0f172a)",
+                  background: isSelected ? "#1e3a5f" : "#111827",
                   padding: "10px 14px",
-                  borderRadius: "15px",
+                  borderRadius: "10px",
                   border: isPopular
-                    ? "2px solid #3b82f6"
+                    ? "1px solid #3b82f6"
                     : isBest
-                      ? "2px solid #22c55e"
+                      ? "1px solid #22c55e"
                       : isSelected
-                        ? "2px solid rgba(59,130,246,0.5)"
-                        : "2px solid transparent",
-                  boxShadow: isSelected
-                    ? "5px 5px 15px #000, -5px -5px 15px #1f2937, 0 0 20px rgba(59,130,246,0.4)"
-                    : "5px 5px 15px #000, -5px -5px 15px #1f2937",
+                        ? "1px solid #2563eb"
+                        : "1px solid #1e293b",
                   minWidth: "80px",
                   textAlign: "center",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                    "0 0 20px #3b82f6, 0 0 40px #9333ea";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                    isSelected
-                      ? "5px 5px 15px #000, -5px -5px 15px #1f2937, 0 0 20px rgba(59,130,246,0.4)"
-                      : "5px 5px 15px #000, -5px -5px 15px #1f2937";
                 }}
               >
                 {isPopular && (
@@ -433,6 +378,7 @@ export function WalletPage() {
                       background: "#3b82f6",
                       fontSize: "9px",
                       whiteSpace: "nowrap",
+                      color: "#fff",
                     }}
                   >
                     ⭐ Popular
@@ -442,9 +388,10 @@ export function WalletPage() {
                   <span
                     className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 rounded"
                     style={{
-                      background: "#22c55e",
+                      background: "#16a34a",
                       fontSize: "9px",
                       whiteSpace: "nowrap",
+                      color: "#fff",
                     }}
                   >
                     🔥 Best
@@ -463,10 +410,7 @@ export function WalletPage() {
         </div>
 
         {/* Offer Text */}
-        <motion.div
-          key={selectedPlan.amount}
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className="text-center text-sm font-bold mb-4 py-2 px-3 rounded-xl"
           style={{
             background: "rgba(34,197,94,0.1)",
@@ -476,7 +420,7 @@ export function WalletPage() {
         >
           You Pay ₹{selectedPlan.amount} → You Get ₹
           {selectedPlan.amount + selectedPlan.bonus}
-        </motion.div>
+        </div>
 
         {/* QR Code */}
         <div className="text-center mb-4">
@@ -486,7 +430,7 @@ export function WalletPage() {
             width={180}
             height={180}
             className="mx-auto rounded-xl"
-            style={{ border: "1px solid rgba(59,130,246,0.3)" }}
+            style={{ border: "1px solid #1e293b" }}
             onError={() => setQrError(true)}
           />
           <p className="text-xs text-gray-400 mt-2">
@@ -499,12 +443,8 @@ export function WalletPage() {
           <button
             type="button"
             onClick={() => handleUpiAppPay("gpay")}
-            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
-            style={{
-              background: "#0f9d58",
-              boxShadow: "0 0 14px rgba(15,157,88,0.45)",
-              border: "none",
-            }}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors duration-150 active:scale-95"
+            style={{ background: "#0f9d58", border: "none" }}
             data-ocid="wallet.primary_button"
           >
             🟢 GPay
@@ -512,12 +452,8 @@ export function WalletPage() {
           <button
             type="button"
             onClick={() => handleUpiAppPay("phonepe")}
-            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
-            style={{
-              background: "#5f259f",
-              boxShadow: "0 0 14px rgba(95,37,159,0.45)",
-              border: "none",
-            }}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors duration-150 active:scale-95"
+            style={{ background: "#5f259f", border: "none" }}
             data-ocid="wallet.primary_button"
           >
             🟣 PhonePe
@@ -525,10 +461,9 @@ export function WalletPage() {
           <button
             type="button"
             onClick={() => handleUpiAppPay("paytm")}
-            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all duration-150 active:scale-95"
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors duration-150 active:scale-95"
             style={{
               background: "#002970",
-              boxShadow: "0 0 14px rgba(0,41,112,0.45)",
               border: "1px solid rgba(59,130,246,0.3)",
             }}
             data-ocid="wallet.primary_button"
@@ -542,23 +477,15 @@ export function WalletPage() {
           type="button"
           onClick={handlePayNow}
           data-ocid="wallet.primary_button"
-          className="w-full font-black text-white text-base py-3 rounded-xl transition-all duration-150 active:scale-95 mb-3"
-          style={{
-            background: "linear-gradient(45deg, #3b82f6, #ec4899)",
-            boxShadow: "0 0 20px rgba(59,130,246,0.4)",
-            border: "none",
-          }}
+          className="w-full font-black text-white text-base py-3 rounded-xl transition-colors duration-150 active:scale-95 mb-3"
+          style={{ background: "#2563eb", border: "none" }}
         >
           ⚡ Pay Now (GPay / PhonePe / Paytm)
         </button>
 
         {/* UTR Input */}
         {showUTR && !utrSubmitted && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2"
-          >
+          <div className="mt-2">
             <p className="text-xs text-yellow-400 mb-2 text-center">
               ⏳ Payment ke baad UPI Ref No / UTR Number darj karein
             </p>
@@ -578,24 +505,17 @@ export function WalletPage() {
               type="button"
               onClick={handleVerifyUTR}
               data-ocid="wallet.submit_button"
-              className="w-full py-2 rounded-xl font-bold text-sm transition-all active:scale-95"
-              style={{
-                background: "linear-gradient(45deg, #22c55e, #16a34a)",
-                boxShadow: "0 0 15px rgba(34,197,94,0.3)",
-                border: "none",
-                color: "white",
-              }}
+              className="w-full py-2 rounded-xl font-bold text-sm transition-colors active:scale-95"
+              style={{ background: "#16a34a", border: "none", color: "white" }}
             >
               ✅ Verify Payment
             </button>
-          </motion.div>
+          </div>
         )}
 
         {/* UTR Submitted */}
         {utrSubmitted && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="text-center py-3 rounded-xl mt-2"
             style={{
               background: "rgba(34,197,94,0.1)",
@@ -609,33 +529,34 @@ export function WalletPage() {
             <p className="text-gray-400 text-xs mt-1">
               Admin review karega, phir balance add hoga
             </p>
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Analytics quick links */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="grid grid-cols-2 gap-3 mb-4"
-      >
-        <div className="glass-card p-4 text-center" data-ocid="wallet.card">
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div
+          className="p-4 text-center rounded-xl"
+          style={{ background: "#0f172a", border: "1px solid #1e293b" }}
+          data-ocid="wallet.card"
+        >
           <p className="text-xs text-gray-500 mb-1">Total Spent</p>
           <p className="text-lg font-bold text-pink-400">₹0.00</p>
         </div>
-        <div className="glass-card p-4 text-center" data-ocid="wallet.card">
+        <div
+          className="p-4 text-center rounded-xl"
+          style={{ background: "#0f172a", border: "1px solid #1e293b" }}
+          data-ocid="wallet.card"
+        >
           <p className="text-xs text-gray-500 mb-1">Total Orders</p>
           <p className="text-lg font-bold text-blue-400">0</p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Transaction History */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-        className="glass-card p-5 mb-4"
+      <div
+        className="p-5 mb-4 rounded-xl"
+        style={{ background: "#0f172a", border: "1px solid #1e293b" }}
         data-ocid="wallet.panel"
       >
         <h2 className="text-lg font-bold text-white mb-4">
@@ -648,7 +569,7 @@ export function WalletPage() {
             Recharge karo aur orders place karo
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Trust Footer */}
       <p

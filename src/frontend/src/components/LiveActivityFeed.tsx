@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 const FIRST_NAMES = [
@@ -88,7 +87,6 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Track last few names to avoid repetition
 const usedNames: string[] = [];
 
 function uniqueName(): string {
@@ -112,7 +110,7 @@ type ActivityItem = {
 function generateEntry(platform: string): ActivityItem {
   const services = PLATFORM_SERVICES[platform] ?? PLATFORM_SERVICES.instagram;
   const svc = pickRandom(services);
-  const isRefund = Math.random() < 0.05; // 5% chance — rare
+  const isRefund = Math.random() < 0.05;
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     user: uniqueName(),
@@ -127,7 +125,6 @@ function buildInitial(platform: string): ActivityItem[] {
   return Array.from({ length: 5 }, () => generateEntry(platform));
 }
 
-// Random delay between 4s and 9s for natural feel
 function randomDelay(): number {
   return 4000 + Math.floor(Math.random() * 5000);
 }
@@ -145,7 +142,6 @@ export function LiveActivityFeed({
   const platformRef = useRef(platform);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset on platform change
   useEffect(() => {
     if (platformRef.current !== platform) {
       platformRef.current = platform;
@@ -153,7 +149,6 @@ export function LiveActivityFeed({
     }
   }, [platform]);
 
-  // Schedule next activity with random delay
   useEffect(() => {
     function scheduleNext() {
       timerRef.current = setTimeout(() => {
@@ -173,21 +168,15 @@ export function LiveActivityFeed({
   return (
     <div
       className="mt-5 rounded-xl overflow-hidden"
-      style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
-      }}
+      style={{ background: "#0f172a", border: "1px solid #1e293b" }}
       data-ocid="order.feed"
     >
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-2 border-b"
-        style={{ borderColor: "rgba(255,255,255,0.06)" }}
+        style={{ borderColor: "#1e293b" }}
       >
-        <span
-          className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"
-          style={{ boxShadow: "0 0 6px #22c55e, 0 0 12px rgba(34,197,94,0.4)" }}
-        />
+        <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 animate-pulse" />
         <span className="text-xs font-semibold text-gray-400">
           Live Activity
         </span>
@@ -205,57 +194,45 @@ export function LiveActivityFeed({
 
       {/* Feed items */}
       <div style={{ height: "210px", overflowY: "hidden" }}>
-        <AnimatePresence initial={false}>
-          {items.slice(0, 6).map((item, idx) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: -18, height: 0 }}
-              animate={{ opacity: 1 - idx * 0.13, y: 0, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.38, ease: "easeOut" }}
-              className="px-3 py-2.5 flex items-center justify-between gap-2 border-b"
-              style={{ borderColor: "rgba(255,255,255,0.04)" }}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                {/* Status dot */}
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{
-                    background:
-                      item.status === "success" ? "#22c55e" : "#ef4444",
-                    boxShadow:
-                      item.status === "success"
-                        ? "0 0 5px #22c55e"
-                        : "0 0 5px #ef4444",
-                  }}
-                />
-                <span className="text-xs text-gray-300 truncate">
-                  <span className="font-semibold text-white">{item.user}</span>
-                  <span className="text-gray-500"> ({item.city})</span>
-                  {" bought "}
-                  <span style={{ color: "#93c5fd" }}>{item.qty}</span>{" "}
-                  <span className="text-gray-300">{item.service}</span>
-                </span>
-              </div>
+        {items.slice(0, 6).map((item) => (
+          <div
+            key={item.id}
+            className="px-3 py-2.5 flex items-center justify-between gap-2 border-b"
+            style={{ borderColor: "#1e293b" }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
               <span
-                className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{
-                  background:
-                    item.status === "success"
-                      ? "rgba(34,197,94,0.12)"
-                      : "rgba(239,68,68,0.12)",
-                  color: item.status === "success" ? "#4ade80" : "#f87171",
-                  border:
-                    item.status === "success"
-                      ? "1px solid rgba(34,197,94,0.25)"
-                      : "1px solid rgba(239,68,68,0.25)",
+                  background: item.status === "success" ? "#22c55e" : "#ef4444",
                 }}
-              >
-                {item.status === "success" ? "✔ Success" : "Refunded"}
+              />
+              <span className="text-xs text-gray-300 truncate">
+                <span className="font-semibold text-white">{item.user}</span>
+                <span className="text-gray-500"> ({item.city})</span>
+                {" bought "}
+                <span style={{ color: "#93c5fd" }}>{item.qty}</span>{" "}
+                <span className="text-gray-300">{item.service}</span>
               </span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+            </div>
+            <span
+              className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              style={{
+                background:
+                  item.status === "success"
+                    ? "rgba(34,197,94,0.12)"
+                    : "rgba(239,68,68,0.12)",
+                color: item.status === "success" ? "#4ade80" : "#f87171",
+                border:
+                  item.status === "success"
+                    ? "1px solid rgba(34,197,94,0.25)"
+                    : "1px solid rgba(239,68,68,0.25)",
+              }}
+            >
+              {item.status === "success" ? "✔ Success" : "Refunded"}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
